@@ -1,0 +1,700 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2009 sp1 (http://www.altova.com) by Gonzalo Abascal (INEM) -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<xs:simpleType name="tipo_fecha">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[012])/\d{4}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tipo_si_no">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="SI"/>
+			<xs:enumeration value="NO"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tipo_area">
+		<xs:restriction base="xs:string">
+			<xs:length value="4"/>
+			<xs:pattern value="[A-Z]{4}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tipo_letraNIF">
+		<xs:restriction base="xs:string">
+			<xs:length value="1"/>
+			<xs:pattern value="[A-Z]{1}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="ACCIONES_INICIADAS_DEL_CENTRO">
+		<xs:annotation>
+			<xs:documentation>El seguimiento se llevará a cabo sobre las acciones formativas de formación profesional para el empleo que, en modalidad de teleformación, se desarrollen en el ámbito de gestión del Servicio Público de Empleo Estatal, incluyendo las acciones formativas no financiadas con fondos públicos desarrolladas por empresas y centros de iniciativa privada.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="DATOS_IDENTIFICATIVOS">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="ID_CENTRO">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="ORIGEN_CENTRO">
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+													<xs:length value="2"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="CODIGO_CENTRO">
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+													<xs:maxLength value="16"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="NOMBRE_CENTRO">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:minLength value="1"/>
+										<xs:maxLength value="40"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="URL_PLATAFORMA">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:minLength value="1"/>
+										<xs:maxLength value="400"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="URL_SEGUIMIENTO">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:minLength value="1"/>
+										<xs:maxLength value="400"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="TELEFONO">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:minLength value="1"/>
+										<xs:maxLength value="15"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="EMAIL">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:minLength value="1"/>
+										<xs:maxLength value="250"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="ACCIONES_FORMATIVAS">
+					<xs:complexType>
+						<xs:sequence minOccurs="0" maxOccurs="unbounded">
+							<xs:element name="ACCION_FORMATIVA">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="ID_ACCION">
+											<xs:complexType>
+												<xs:sequence>
+													<xs:element name="ORIGEN_ACCION">
+														<xs:simpleType>
+															<xs:restriction base="xs:string">
+																<xs:length value="2"/>
+															</xs:restriction>
+														</xs:simpleType>
+													</xs:element>
+													<xs:element name="CODIGO_ACCION">
+														<xs:simpleType>
+															<xs:restriction base="xs:string">
+																<xs:maxLength value="30"/>
+															</xs:restriction>
+														</xs:simpleType>
+													</xs:element>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="SITUACION">
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+													<xs:length value="2"/>
+													<xs:enumeration value="10"/>
+													<xs:enumeration value="20"/>
+													<xs:enumeration value="30"/>
+													<xs:enumeration value="40"/>
+													<xs:enumeration value="50"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="ID_ESPECIALIDAD_PRINCIPAL">
+											<xs:complexType>
+												<xs:sequence>
+													<xs:element name="ORIGEN_ESPECIALIDAD">
+														<xs:simpleType>
+															<xs:restriction base="xs:string">
+																<xs:length value="2"/>
+															</xs:restriction>
+														</xs:simpleType>
+													</xs:element>
+													<xs:element name="AREA_PROFESIONAL" type="tipo_area"/>
+													<xs:element name="CODIGO_ESPECIALIDAD">
+														<xs:simpleType>
+															<xs:restriction base="xs:string">
+																<xs:maxLength value="14"/>
+															</xs:restriction>
+														</xs:simpleType>
+													</xs:element>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="DURACION" type="xs:int"/>
+										<xs:element name="FECHA_INICIO" type="tipo_fecha"/>
+										<xs:element name="FECHA_FIN" type="tipo_fecha"/>
+										<xs:element name="IND_ITINERARIO_COMPLETO" type="tipo_si_no"/>
+										<xs:element name="TIPO_FINANCIACION">
+											<xs:simpleType>
+												<xs:restriction base="xs:string">
+													<xs:length value="2"/>
+													<xs:enumeration value="PU"/>
+													<xs:enumeration value="PR"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+										<xs:element name="NUMERO_ASISTENTES" type="xs:int"/>
+										<xs:element name="DESCRIPCION_ACCION">
+											<xs:complexType>
+												<xs:sequence>
+													<xs:element name="DENOMINACION_ACCION">
+														<xs:simpleType>
+															<xs:restriction base="xs:string">
+																<xs:minLength value="1"/>
+																<xs:maxLength value="250"/>
+															</xs:restriction>
+														</xs:simpleType>
+													</xs:element>
+													<xs:element name="INFORMACION_GENERAL">
+														<xs:simpleType>
+															<xs:restriction base="xs:string">
+																<xs:minLength value="0"/>
+																<xs:maxLength value="650"/>
+															</xs:restriction>
+														</xs:simpleType>
+													</xs:element>
+													<xs:element name="HORARIOS">
+														<xs:simpleType>
+															<xs:restriction base="xs:string">
+																<xs:minLength value="0"/>
+																<xs:maxLength value="650"/>
+															</xs:restriction>
+														</xs:simpleType>
+													</xs:element>
+													<xs:element name="REQUISITOS">
+														<xs:simpleType>
+															<xs:restriction base="xs:string">
+																<xs:minLength value="0"/>
+																<xs:maxLength value="650"/>
+															</xs:restriction>
+														</xs:simpleType>
+													</xs:element>
+													<xs:element name="CONTACTO_ACCION">
+														<xs:simpleType>
+															<xs:restriction base="xs:string">
+																<xs:minLength value="0"/>
+																<xs:maxLength value="650"/>
+															</xs:restriction>
+														</xs:simpleType>
+													</xs:element>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="ESPECIALIDADES_ACCION">
+											<xs:complexType>
+												<xs:sequence minOccurs="0" maxOccurs="unbounded">
+													<xs:element name="ESPECIALIDAD">
+														<xs:complexType>
+															<xs:sequence>
+																<xs:element name="ID_ESPECIALIDAD">
+																	<xs:complexType>
+																		<xs:sequence>
+																			<xs:element name="ORIGEN_ESPECIALIDAD">
+																				<xs:simpleType>
+																					<xs:restriction base="xs:string">
+																						<xs:length value="2"/>
+																					</xs:restriction>
+																				</xs:simpleType>
+																			</xs:element>
+																			<xs:element name="AREA_PROFESIONAL" type="tipo_area"/>
+																			<xs:element name="CODIGO_ESPECIALIDAD">
+																				<xs:simpleType>
+																					<xs:restriction base="xs:string">
+																						<xs:maxLength value="14"/>
+																					</xs:restriction>
+																				</xs:simpleType>
+																			</xs:element>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
+																<xs:element name="CENTRO_IMPARTICION">
+																	<xs:complexType>
+																		<xs:sequence>
+																			<xs:element name="ORIGEN_CENTRO">
+																				<xs:simpleType>
+																					<xs:restriction base="xs:string">
+																						<xs:length value="2"/>
+																					</xs:restriction>
+																				</xs:simpleType>
+																			</xs:element>
+																			<xs:element name="CODIGO_CENTRO">
+																				<xs:simpleType>
+																					<xs:restriction base="xs:string">
+																						<xs:maxLength value="16"/>
+																					</xs:restriction>
+																				</xs:simpleType>
+																			</xs:element>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
+																<xs:element name="FECHA_INICIO" type="tipo_fecha"/>
+																<xs:element name="FECHA_FIN" type="tipo_fecha"/>
+																<xs:element name="MODALIDAD_IMPARTICION">
+																	<xs:simpleType>
+																		<xs:restriction base="xs:string">
+																			<xs:length value="2"/>
+																			<xs:enumeration value="TF"/>
+																			<xs:enumeration value="PR"/>
+																			<xs:enumeration value="PE"/>
+																		</xs:restriction>
+																	</xs:simpleType>
+																</xs:element>
+																<xs:element name="DATOS_DURACION">
+																	<xs:complexType>
+																		<xs:sequence>
+																			<xs:element name="HORAS_PRESENCIAL" type="xs:int"/>
+																			<xs:element name="HORAS_TELEFORMACION" type="xs:int"/>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
+																<xs:element name="CENTROS_SESIONES_PRESENCIALES">
+																	<xs:complexType>
+																		<xs:sequence minOccurs="0" maxOccurs="unbounded">
+																			<xs:element name="CENTRO_PRESENCIAL">
+																				<xs:complexType>
+																					<xs:sequence>
+																						<xs:element name="ORIGEN_CENTRO">
+																							<xs:simpleType>
+																								<xs:restriction base="xs:string">
+																									<xs:length value="2"/>
+																								</xs:restriction>
+																							</xs:simpleType>
+																						</xs:element>
+																						<xs:element name="CODIGO_CENTRO">
+																							<xs:simpleType>
+																								<xs:restriction base="xs:string">
+																									<xs:maxLength value="16"/>
+																								</xs:restriction>
+																							</xs:simpleType>
+																						</xs:element>
+																					</xs:sequence>
+																				</xs:complexType>
+																			</xs:element>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
+																<xs:element name="TUTORES_FORMADORES">
+																	<xs:complexType>
+																		<xs:sequence minOccurs="0" maxOccurs="unbounded">
+																			<xs:element name="TUTOR_FORMADOR">
+																				<xs:complexType>
+																					<xs:sequence>
+																						<xs:element name="ID_TUTOR">
+																							<xs:complexType>
+																								<xs:sequence>
+																									<xs:element name="TIPO_DOCUMENTO">
+																										<xs:simpleType>
+																											<xs:restriction base="xs:string">
+																												<xs:length value="1"/>
+																												<xs:enumeration value="D"/>
+																												<xs:enumeration value="E"/>
+																												<xs:enumeration value="U"/>
+																												<xs:enumeration value="W"/>
+																												<xs:enumeration value="G"/>
+																												<xs:enumeration value="H"/>
+																											</xs:restriction>
+																										</xs:simpleType>
+																									</xs:element>
+																									<xs:element name="NUM_DOCUMENTO">
+																										<xs:simpleType>
+																											<xs:restriction base="xs:string">
+																												<xs:maxLength value="10"/>
+																											</xs:restriction>
+																										</xs:simpleType>
+																									</xs:element>
+																									<xs:element name="LETRA_NIF" type="tipo_letraNIF"/>
+																								</xs:sequence>
+																							</xs:complexType>
+																						</xs:element>
+																						<xs:element name="ACREDITACION_TUTOR">
+																							<xs:simpleType>
+																								<xs:restriction base="xs:string">
+																									<xs:maxLength value="200"/>
+																								</xs:restriction>
+																							</xs:simpleType>
+																						</xs:element>
+																						<xs:element name="EXPERIENCIA_PROFESIONAL" type="xs:int"/>
+																						<xs:element name="COMPETENCIA_DOCENTE">
+																							<xs:simpleType>
+																								<xs:restriction base="xs:string">
+																									<xs:maxLength value="2"/>
+																									<xs:enumeration value="01"/>
+																									<xs:enumeration value="02"/>
+																									<xs:enumeration value="03"/>
+																									<xs:enumeration value="04"/>
+																									<xs:enumeration value="05"/>
+																									<xs:enumeration value="06"/>
+																								</xs:restriction>
+																							</xs:simpleType>
+																						</xs:element>
+																						<xs:element name="EXPERIENCIA_MODALIDAD_TELEFORMACION" type="xs:int"/>
+																						<xs:element name="FORMACION_MODALIDAD_TELEFORMACION ">
+																							<xs:simpleType>
+																								<xs:restriction base="xs:string">
+																									<xs:maxLength value="2"/>
+																									<xs:enumeration value="01"/>
+																									<xs:enumeration value="02"/>
+																									<xs:enumeration value="03"/>
+																									<xs:enumeration value="04"/>
+																								</xs:restriction>
+																							</xs:simpleType>
+																						</xs:element>
+																					</xs:sequence>
+																				</xs:complexType>
+																			</xs:element>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
+																<xs:element name="USO">
+																	<xs:complexType>
+																		<xs:sequence minOccurs="0">
+																			<xs:element name="HORARIO_MANANA">
+																				<xs:complexType>
+																					<xs:sequence>
+																						<xs:element name="NUM_PARTICIPANTES" type="xs:int"/>
+																						<xs:element name="NUMERO_ACCESOS" type="xs:int"/>
+																						<xs:element name="DURACION_TOTAL" type="xs:int"/>
+																					</xs:sequence>
+																				</xs:complexType>
+																			</xs:element>
+																			<xs:element name="HORARIO_TARDE">
+																				<xs:complexType>
+																					<xs:sequence>
+																						<xs:element name="NUM_PARTICIPANTES" type="xs:int"/>
+																						<xs:element name="NUMERO_ACCESOS" type="xs:int"/>
+																						<xs:element name="DURACION_TOTAL" type="xs:int"/>
+																					</xs:sequence>
+																				</xs:complexType>
+																			</xs:element>
+																			<xs:element name="HORARIO_NOCHE">
+																				<xs:complexType>
+																					<xs:sequence>
+																						<xs:element name="NUM_PARTICIPANTES" type="xs:int"/>
+																						<xs:element name="NUMERO_ACCESOS" type="xs:int"/>
+																						<xs:element name="DURACION_TOTAL" type="xs:int"/>
+																					</xs:sequence>
+																				</xs:complexType>
+																			</xs:element>
+																			<xs:element name="SEGUIMIENTO_EVALUACION">
+																				<xs:complexType>
+																					<xs:sequence>
+																						<xs:element name="NUM_PARTICIPANTES" type="xs:int"/>
+																						<xs:element name="NUMERO_ACTIVIDADES_APRENDIZAJE" type="xs:int"/>
+																						<xs:element name="NUMERO_INTENTOS" type="xs:int"/>
+																						<xs:element name="NUMERO_ACTIVIDADES_EVALUACION" type="xs:int"/>
+																					</xs:sequence>
+																				</xs:complexType>
+																			</xs:element>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
+															</xs:sequence>
+														</xs:complexType>
+													</xs:element>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="PARTICIPANTES">
+											<xs:complexType>
+												<xs:sequence minOccurs="0" maxOccurs="unbounded">
+													<xs:element name="PARTICIPANTE">
+														<xs:complexType>
+															<xs:sequence>
+																<xs:element name="ID_PARTICIPANTE">
+																	<xs:complexType>
+																		<xs:sequence>
+																			<xs:element name="TIPO_DOCUMENTO">
+																				<xs:simpleType>
+																					<xs:restriction base="xs:string">
+																						<xs:length value="1"/>
+																						<xs:enumeration value="D"/>
+																						<xs:enumeration value="E"/>
+																						<xs:enumeration value="U"/>
+																						<xs:enumeration value="W"/>
+																						<xs:enumeration value="G"/>
+																						<xs:enumeration value="H"/>
+																					</xs:restriction>
+																				</xs:simpleType>
+																			</xs:element>
+																			<xs:element name="NUM_DOCUMENTO">
+																				<xs:simpleType>
+																					<xs:restriction base="xs:string">
+																						<xs:maxLength value="10"/>
+																					</xs:restriction>
+																				</xs:simpleType>
+																			</xs:element>
+																			<xs:element name="LETRA_NIF" type="tipo_letraNIF"/>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
+																<xs:element name="INDICADOR_COMPETENCIAS_CLAVE">
+																	<xs:simpleType>
+																		<xs:restriction base="xs:string">
+																			<xs:maxLength value="2"/>
+																			<xs:enumeration value="01"/>
+																			<xs:enumeration value="02"/>
+																			<xs:enumeration value="03"/>
+																		</xs:restriction>
+																	</xs:simpleType>
+																</xs:element>
+																<xs:element name="CONTRATO_FORMACION">
+																	<xs:complexType>
+																		<xs:sequence minOccurs="0">
+																			<xs:element name="ID_CONTRATO_CFA">
+																				<xs:simpleType>
+																					<xs:restriction base="xs:string">
+																						<xs:minLength value="14"/>
+																						<xs:maxLength value="14"/>
+																					</xs:restriction>
+																				</xs:simpleType>
+																			</xs:element>
+																			<xs:element name="CIF_EMPRESA">
+																				<xs:simpleType>
+																					<xs:restriction base="xs:string">
+																						<xs:maxLength value="10"/>
+																						<xs:minLength value="9"/>
+																					</xs:restriction>
+																				</xs:simpleType>
+																			</xs:element>
+																			<xs:element name="ID_TUTOR_EMPRESA">
+																				<xs:complexType>
+																					<xs:sequence>
+																						<xs:element name="TIPO_DOCUMENTO">
+																							<xs:simpleType>
+																								<xs:restriction base="xs:string">
+																									<xs:length value="1"/>
+																									<xs:enumeration value="D"/>
+																									<xs:enumeration value="E"/>
+																									<xs:enumeration value="U"/>
+																									<xs:enumeration value="W"/>
+																									<xs:enumeration value="G"/>
+																									<xs:enumeration value="H"/>
+																								</xs:restriction>
+																							</xs:simpleType>
+																						</xs:element>
+																						<xs:element name="NUM_DOCUMENTO">
+																							<xs:simpleType>
+																								<xs:restriction base="xs:string">
+																									<xs:maxLength value="10"/>
+																								</xs:restriction>
+																							</xs:simpleType>
+																						</xs:element>
+																						<xs:element name="LETRA_NIF" type="tipo_letraNIF"/>
+																					</xs:sequence>
+																				</xs:complexType>
+																			</xs:element>
+																			<xs:element name="ID_TUTOR_FORMACION">
+																				<xs:complexType>
+																					<xs:sequence>
+																						<xs:element name="TIPO_DOCUMENTO">
+																							<xs:simpleType>
+																								<xs:restriction base="xs:string">
+																									<xs:length value="1"/>
+																									<xs:enumeration value="D"/>
+																									<xs:enumeration value="E"/>
+																									<xs:enumeration value="U"/>
+																									<xs:enumeration value="W"/>
+																									<xs:enumeration value="G"/>
+																									<xs:enumeration value="H"/>
+																								</xs:restriction>
+																							</xs:simpleType>
+																						</xs:element>
+																						<xs:element name="NUM_DOCUMENTO">
+																							<xs:simpleType>
+																								<xs:restriction base="xs:string">
+																									<xs:maxLength value="10"/>
+																								</xs:restriction>
+																							</xs:simpleType>
+																						</xs:element>
+																						<xs:element name="LETRA_NIF" type="tipo_letraNIF"/>
+																					</xs:sequence>
+																				</xs:complexType>
+																			</xs:element>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
+																<xs:element name="ESPECIALIDADES_PARTICIPANTE">
+																	<xs:complexType>
+																		<xs:sequence maxOccurs="unbounded">
+																			<xs:element name="ESPECIALIDAD">
+																				<xs:complexType>
+																					<xs:sequence>
+																						<xs:element name="ID_ESPECIALIDAD">
+																							<xs:complexType>
+																								<xs:sequence>
+																									<xs:element name="ORIGEN_ESPECIALIDAD">
+																										<xs:simpleType>
+																											<xs:restriction base="xs:string">
+																												<xs:length value="2"/>
+																											</xs:restriction>
+																										</xs:simpleType>
+																									</xs:element>
+																									<xs:element name="AREA_PROFESIONAL" type="tipo_area"/>
+																									<xs:element name="CODIGO_ESPECIALIDAD">
+																										<xs:simpleType>
+																											<xs:restriction base="xs:string">
+																												<xs:maxLength value="14"/>
+																											</xs:restriction>
+																										</xs:simpleType>
+																									</xs:element>
+																								</xs:sequence>
+																							</xs:complexType>
+																						</xs:element>
+																						<xs:element name="FECHA_ALTA" type="tipo_fecha" minOccurs="0"/>
+																						<xs:element name="FECHA_BAJA" type="tipo_fecha" minOccurs="0"/>
+																						<xs:element name="TUTORIAS_PRESENCIALES">
+																							<xs:complexType>
+																								<xs:sequence minOccurs="0" maxOccurs="unbounded">
+																									<xs:element name="TUTORIA_PRESENCIAL">
+																										<xs:complexType>
+																											<xs:sequence>
+																												<xs:element name="CENTRO_PRESENCIAL_TUTORIA">
+																													<xs:complexType>
+																														<xs:sequence>
+																															<xs:element name="ORIGEN_CENTRO">
+																																<xs:simpleType>
+																																	<xs:restriction base="xs:string">
+																																		<xs:length value="2"/>
+																																	</xs:restriction>
+																																</xs:simpleType>
+																															</xs:element>
+																															<xs:element name="CODIGO_CENTRO">
+																																<xs:simpleType>
+																																	<xs:restriction base="xs:string">
+																																		<xs:maxLength value="16"/>
+																																	</xs:restriction>
+																																</xs:simpleType>
+																															</xs:element>
+																														</xs:sequence>
+																													</xs:complexType>
+																												</xs:element>
+																												<xs:element name="FECHA_INICIO" type="tipo_fecha"/>
+																												<xs:element name="FECHA_FIN" type="tipo_fecha"/>
+																											</xs:sequence>
+																										</xs:complexType>
+																									</xs:element>
+																								</xs:sequence>
+																							</xs:complexType>
+																						</xs:element>
+																						<xs:element name="EVALUACION_FINAL">
+																							<xs:complexType>
+																								<xs:sequence minOccurs="0">
+																									<xs:element name="CENTRO_PRESENCIAL_EVALUACION">
+																										<xs:complexType>
+																											<xs:sequence>
+																												<xs:element name="ORIGEN_CENTRO">
+																													<xs:simpleType>
+																														<xs:restriction base="xs:string">
+																															<xs:length value="2"/>
+																														</xs:restriction>
+																													</xs:simpleType>
+																												</xs:element>
+																												<xs:element name="CODIGO_CENTRO">
+																													<xs:simpleType>
+																														<xs:restriction base="xs:string">
+																															<xs:maxLength value="16"/>
+																														</xs:restriction>
+																													</xs:simpleType>
+																												</xs:element>
+																											</xs:sequence>
+																										</xs:complexType>
+																									</xs:element>
+																									<xs:element name="FECHA_INICIO" type="tipo_fecha"/>
+																									<xs:element name="FECHA_FIN" type="tipo_fecha"/>
+																								</xs:sequence>
+																							</xs:complexType>
+																						</xs:element>
+																						<xs:element name="RESULTADOS">
+																							<xs:complexType>
+																								<xs:sequence minOccurs="0">
+																									<xs:element name="RESULTADO_FINAL">
+																										<xs:simpleType>
+																											<xs:restriction base="xs:string">
+																												<xs:length value="1"/>
+																												<xs:enumeration value="0"/>
+																												<xs:enumeration value="1"/>
+																												<xs:enumeration value="2"/>
+																												<xs:enumeration value="3"/>
+																												<xs:enumeration value="4"/>
+																												<xs:enumeration value="5"/>
+																												<xs:enumeration value="6"/>
+																												<xs:enumeration value="7"/>
+																											</xs:restriction>
+																										</xs:simpleType>
+																									</xs:element>
+																									<xs:element name="CALIFICACION_FINAL" minOccurs="0">
+																										<xs:simpleType>
+																											<xs:restriction base="xs:int">
+																												<xs:minInclusive value="500"/>
+																												<xs:maxInclusive value="1000"/>
+																											</xs:restriction>
+																										</xs:simpleType>
+																									</xs:element>
+																									<xs:element name="PUNTUACION_FINAL" minOccurs="0">
+																										<xs:simpleType>
+																											<xs:restriction base="xs:int">
+																												<xs:minInclusive value="500"/>
+																												<xs:maxInclusive value="1000"/>
+																											</xs:restriction>
+																										</xs:simpleType>
+																									</xs:element>
+																								</xs:sequence>
+																							</xs:complexType>
+																						</xs:element>
+																					</xs:sequence>
+																				</xs:complexType>
+																			</xs:element>
+																		</xs:sequence>
+																	</xs:complexType>
+																</xs:element>
+															</xs:sequence>
+														</xs:complexType>
+													</xs:element>
+												</xs:sequence>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

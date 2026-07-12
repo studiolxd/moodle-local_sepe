@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/sepe/db" VERSION="20260712" COMMENT="XMLDB file for Moodle local/sepe"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_sepe_centro" COMMENT="Training centre identification data as registered by SEPE (single row expected)">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="origen_centro" TYPE="char" LENGTH="2" NOTNULL="true" SEQUENCE="false" COMMENT="ORIGEN_CENTRO code"/>
+        <FIELD NAME="codigo_centro" TYPE="char" LENGTH="16" NOTNULL="true" SEQUENCE="false" COMMENT="CODIGO_CENTRO assigned by SEPE, stored verbatim"/>
+        <FIELD NAME="nombre_centro" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="NOMBRE_CENTRO"/>
+        <FIELD NAME="url_plataforma" TYPE="char" LENGTH="400" NOTNULL="true" SEQUENCE="false" COMMENT="URL_PLATAFORMA"/>
+        <FIELD NAME="url_seguimiento" TYPE="char" LENGTH="400" NOTNULL="true" SEQUENCE="false" COMMENT="URL_SEGUIMIENTO"/>
+        <FIELD NAME="telefono" TYPE="char" LENGTH="15" NOTNULL="true" SEQUENCE="false" COMMENT="TELEFONO"/>
+        <FIELD NAME="email" TYPE="char" LENGTH="250" NOTNULL="true" SEQUENCE="false" COMMENT="EMAIL"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="origen_codigo" UNIQUE="true" FIELDS="origen_centro, codigo_centro"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_sepe_accion" COMMENT="Training actions (acciones formativas) notified by SEPE via crearAccion">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="origen_accion" TYPE="char" LENGTH="2" NOTNULL="true" SEQUENCE="false" COMMENT="ORIGEN_ACCION code"/>
+        <FIELD NAME="codigo_accion" TYPE="char" LENGTH="30" NOTNULL="true" SEQUENCE="false" COMMENT="CODIGO_ACCION assigned by SEPE, stored verbatim"/>
+        <FIELD NAME="situacion" TYPE="char" LENGTH="2" NOTNULL="true" SEQUENCE="false" COMMENT="SITUACION status code"/>
+        <FIELD NAME="origen_especialidad" TYPE="char" LENGTH="2" NOTNULL="true" SEQUENCE="false" COMMENT="Main speciality ORIGEN_ESPECIALIDAD"/>
+        <FIELD NAME="area_profesional" TYPE="char" LENGTH="4" NOTNULL="true" SEQUENCE="false" COMMENT="Main speciality AREA_PROFESIONAL"/>
+        <FIELD NAME="codigo_especialidad" TYPE="char" LENGTH="14" NOTNULL="true" SEQUENCE="false" COMMENT="Main speciality CODIGO_ESPECIALIDAD"/>
+        <FIELD NAME="duracion" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="DURACION in hours"/>
+        <FIELD NAME="fecha_inicio" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FECHA_INICIO dd/mm/yyyy, stored verbatim"/>
+        <FIELD NAME="fecha_fin" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FECHA_FIN dd/mm/yyyy, stored verbatim"/>
+        <FIELD NAME="itinerario_completo" TYPE="char" LENGTH="2" NOTNULL="true" SEQUENCE="false" COMMENT="IND_ITINERARIO_COMPLETO SI/NO"/>
+        <FIELD NAME="tipo_financiacion" TYPE="char" LENGTH="2" NOTNULL="true" SEQUENCE="false" COMMENT="TIPO_FINANCIACION"/>
+        <FIELD NAME="numero_asistentes" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="NUMERO_ASISTENTES"/>
+        <FIELD NAME="denominacion" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="DENOMINACION_ACCION"/>
+        <FIELD NAME="informacion_general" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="INFORMACION_GENERAL"/>
+        <FIELD NAME="horarios" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="HORARIOS"/>
+        <FIELD NAME="requisitos" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="REQUISITOS"/>
+        <FIELD NAME="contacto" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="CONTACTO_ACCION"/>
+        <FIELD NAME="rawxml" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Verbatim ACCION_FORMATIVA XML fragment as received, echoed back to SEPE"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Moodle course mapped to this action; null until mapped"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="courseid" TYPE="foreign" FIELDS="courseid" REFTABLE="course" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="origen_codigo" UNIQUE="true" FIELDS="origen_accion, codigo_accion"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_sepe_especialidad" COMMENT="Specialities (especialidades formativas) belonging to a training action">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="accionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="origen_especialidad" TYPE="char" LENGTH="2" NOTNULL="true" SEQUENCE="false" COMMENT="ORIGEN_ESPECIALIDAD"/>
+        <FIELD NAME="area_profesional" TYPE="char" LENGTH="4" NOTNULL="true" SEQUENCE="false" COMMENT="AREA_PROFESIONAL"/>
+        <FIELD NAME="codigo_especialidad" TYPE="char" LENGTH="14" NOTNULL="true" SEQUENCE="false" COMMENT="CODIGO_ESPECIALIDAD"/>
+        <FIELD NAME="centro_origen" TYPE="char" LENGTH="2" NOTNULL="false" SEQUENCE="false" COMMENT="CENTRO_IMPARTICION ORIGEN_CENTRO"/>
+        <FIELD NAME="centro_codigo" TYPE="char" LENGTH="16" NOTNULL="false" SEQUENCE="false" COMMENT="CENTRO_IMPARTICION CODIGO_CENTRO"/>
+        <FIELD NAME="fecha_inicio" TYPE="char" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FECHA_INICIO dd/mm/yyyy"/>
+        <FIELD NAME="fecha_fin" TYPE="char" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FECHA_FIN dd/mm/yyyy"/>
+        <FIELD NAME="modalidad" TYPE="char" LENGTH="2" NOTNULL="false" SEQUENCE="false" COMMENT="MODALIDAD_IMPARTICION"/>
+        <FIELD NAME="horas_presencial" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="HORAS_PRESENCIAL"/>
+        <FIELD NAME="horas_teleformacion" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="HORAS_TELEFORMACION"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="accionid" TYPE="foreign" FIELDS="accionid" REFTABLE="local_sepe_accion" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="local_sepe_tutor" COMMENT="Tutors (tutores-formadores) of a training action speciality; contains third-party personal data received from SEPE">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="accionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="especialidadid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="tipo_documento" TYPE="char" LENGTH="1" NOTNULL="true" SEQUENCE="false" COMMENT="TIPO_DOCUMENTO"/>
+        <FIELD NAME="num_documento" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="NUM_DOCUMENTO"/>
+        <FIELD NAME="letra_nif" TYPE="char" LENGTH="1" NOTNULL="true" SEQUENCE="false" COMMENT="LETRA_NIF"/>
+        <FIELD NAME="acreditacion" TYPE="char" LENGTH="200" NOTNULL="false" SEQUENCE="false" COMMENT="ACREDITACION_TUTOR"/>
+        <FIELD NAME="experiencia_profesional" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="EXPERIENCIA_PROFESIONAL in years"/>
+        <FIELD NAME="competencia_docente" TYPE="char" LENGTH="2" NOTNULL="false" SEQUENCE="false" COMMENT="COMPETENCIA_DOCENTE SI/NO"/>
+        <FIELD NAME="experiencia_teleformacion" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="EXPERIENCIA_MODALIDAD_TELEFORMACION in years"/>
+        <FIELD NAME="formacion_teleformacion" TYPE="char" LENGTH="2" NOTNULL="false" SEQUENCE="false" COMMENT="FORMACION_MODALIDAD_TELEFORMACION SI/NO"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Moodle user mapped to this tutor; null until mapped"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="accionid" TYPE="foreign" FIELDS="accionid" REFTABLE="local_sepe_accion" REFFIELDS="id"/>
+        <KEY NAME="especialidadid" TYPE="foreign" FIELDS="especialidadid" REFTABLE="local_sepe_especialidad" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="local_sepe_participante" COMMENT="Participants (alumnado) of a training action; contains third-party personal data received from SEPE">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="accionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="tipo_documento" TYPE="char" LENGTH="1" NOTNULL="true" SEQUENCE="false" COMMENT="TIPO_DOCUMENTO"/>
+        <FIELD NAME="num_documento" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="NUM_DOCUMENTO"/>
+        <FIELD NAME="letra_nif" TYPE="char" LENGTH="1" NOTNULL="true" SEQUENCE="false" COMMENT="LETRA_NIF"/>
+        <FIELD NAME="competencias_clave" TYPE="char" LENGTH="2" NOTNULL="false" SEQUENCE="false" COMMENT="INDICADOR_COMPETENCIAS_CLAVE SI/NO"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Moodle user mapped to this participant; null until mapped"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="accionid" TYPE="foreign" FIELDS="accionid" REFTABLE="local_sepe_accion" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="local_sepe_wslog" COMMENT="Log of SOAP requests received on the SEPE tracking web service endpoint">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="operation" TYPE="char" LENGTH="40" NOTNULL="true" SEQUENCE="false" COMMENT="SOAP operation name, or transport-level outcome such as fault"/>
+        <FIELD NAME="ip" TYPE="char" LENGTH="45" NOTNULL="true" SEQUENCE="false" COMMENT="Remote IP address"/>
+        <FIELD NAME="returncode" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Protocol CODIGO_RETORNO, null when a SOAP fault was returned"/>
+        <FIELD NAME="requestxml" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Raw request envelope"/>
+        <FIELD NAME="responsexml" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Raw response envelope"/>
+        <FIELD NAME="errormsg" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Short error description when the request failed"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="timecreated" UNIQUE="false" FIELDS="timecreated"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
