@@ -28,7 +28,6 @@ namespace local_sepe\soap;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class protocol {
-
     /** @var string SOAP 1.1 envelope namespace. */
     public const NS_SOAPENV = 'http://schemas.xmlsoap.org/soap/envelope/';
 

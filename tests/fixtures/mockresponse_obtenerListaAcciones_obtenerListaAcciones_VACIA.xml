@@ -1,0 +1,12 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <p867:obtenerListaAccionesResponse xmlns:p867="http://impl.ws.application.proveedorcentro.meyss.spee.es">
+         <p148:RESPUESTA_OBT_LISTA_ACCIONES xmlns:p465="http://entsal.bean.domain.common.proveedorcentro.meyss.spee.es" xmlns:p148="http://salida.bean.domain.common.proveedorcentro.meyss.spee.es">
+            <CODIGO_RETORNO>0</CODIGO_RETORNO>
+            <ETIQUETA_ERROR xsi:nil="true"/>
+            <p465:ID_ACCION xsi:nil="true"/>
+         </p148:RESPUESTA_OBT_LISTA_ACCIONES>
+      </p867:obtenerListaAccionesResponse>
+   </soapenv:Body>
+</soapenv:Envelope>

@@ -24,7 +24,6 @@ namespace local_sepe\local;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class log_repository {
-
     /**
      * Logs a request. Best-effort: a logging failure never breaks the response.
      *

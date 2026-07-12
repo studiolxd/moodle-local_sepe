@@ -24,7 +24,6 @@ namespace local_sepe\event;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class accion_created extends \core\event\base {
-
     #[\Override]
     protected function init() {
         $this->data['crud'] = 'c';

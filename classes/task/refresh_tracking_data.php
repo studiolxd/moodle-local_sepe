@@ -28,7 +28,6 @@ namespace local_sepe\task;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class refresh_tracking_data extends \core\task\scheduled_task {
-
     #[\Override]
     public function get_name() {
         return get_string('taskrefreshtracking', 'local_sepe');

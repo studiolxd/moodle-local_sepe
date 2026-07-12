@@ -29,7 +29,6 @@ namespace local_sepe\soap;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class wsse {
-
     /**
      * Validates the WS-Security header of a request.
      *
@@ -41,8 +40,10 @@ final class wsse {
         if ($token === null) {
             throw new auth_failed_exception('Missing WS-Security UsernameToken');
         }
-        if ($token['passwordtype'] !== null
-                && !str_ends_with($token['passwordtype'], protocol::PASSWORDTEXT_SUFFIX)) {
+        if (
+            $token['passwordtype'] !== null
+                && !str_ends_with($token['passwordtype'], protocol::PASSWORDTEXT_SUFFIX)
+        ) {
             throw new auth_failed_exception('Unsupported password type: ' . $token['passwordtype']);
         }
         $hash = (string)get_config('local_sepe', 'wspasswordhash');

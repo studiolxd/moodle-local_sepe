@@ -24,7 +24,6 @@ namespace local_sepe\local;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class accion_repository {
-
     /**
      * Whether an action with this identifier exists.
      *

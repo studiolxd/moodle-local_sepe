@@ -29,7 +29,6 @@ namespace local_sepe\admin;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class setting_hashedpassword extends \admin_setting_configpasswordunmask {
-
     #[\Override]
     public function get_setting() {
         $current = $this->config_read($this->name);

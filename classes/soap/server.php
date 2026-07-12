@@ -35,7 +35,6 @@ use local_sepe\local\log_repository;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class server {
-
     /** @var response_builder Response envelope builder. */
     private response_builder $builder;
 
@@ -89,7 +88,7 @@ final class server {
             return new http_result(200, $body);
         } catch (auth_failed_exception $e) {
             $log->operation = $log->operation !== '' ? $log->operation : 'auth';
-            $log->errormsg = $e->reason;
+            $log->errormsg = $e->getMessage();
             $body = $this->builder->fault(
                 'FailedAuthentication',
                 'The security token could not be authenticated or authorized',

@@ -1,0 +1,158 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_sepe/acciones_page
+
+    Admin page with the SEPE centre data, received training actions and
+    the latest web service requests.
+
+    Context variables required for this template:
+    * centro - object|null, registered centre (codigo, nombre, urlseguimiento)
+    * hasacciones - bool, whether any action was received
+    * acciones - array of actions (id, codigo, denominacion, situacion, especialidad, fechas, mapped, options)
+    * canviewlogs - bool, whether the log section is shown
+    * haslogs - bool, whether any request was logged
+    * logs - array of log rows (time, operation, ip, returncode, errormsg)
+    * actionurl - string, form target URL
+    * sesskey - string, session key for the forms
+
+    Example context (json):
+    {
+        "centro": { "codigo": "20/9999999999", "nombre": "Centro de teleformación", "urlseguimiento": "https://example.com/local/sepe/endpoint.php" },
+        "hasacciones": true,
+        "acciones": [
+            {
+                "id": 1,
+                "codigo": "20/2026000001",
+                "denominacion": "Docencia de la formación para el empleo",
+                "situacion": "50",
+                "especialidad": "SSCE0110",
+                "fechas": "01/09/2026 — 20/12/2026",
+                "mapped": false,
+                "options": [ { "id": 2, "name": "Curso demo", "selected": false } ]
+            }
+        ],
+        "canviewlogs": true,
+        "haslogs": true,
+        "logs": [
+            { "time": "12/07/26, 13:00", "operation": "obtenerDatosCentro", "ip": "127.0.0.1", "returncode": "0", "errormsg": null }
+        ],
+        "actionurl": "https://example.com/local/sepe/index.php",
+        "sesskey": "abcdef"
+    }
+}}
+<h3>{{#str}} centrosection, local_sepe {{/str}}</h3>
+{{#centro}}
+<table class="table generaltable w-auto">
+    <tbody>
+        <tr><th scope="row">{{#str}} centrocodigo, local_sepe {{/str}}</th><td>{{codigo}}</td></tr>
+        <tr><th scope="row">{{#str}} centronombre, local_sepe {{/str}}</th><td>{{nombre}}</td></tr>
+        <tr><th scope="row">{{#str}} centrourlseguimiento, local_sepe {{/str}}</th><td>{{urlseguimiento}}</td></tr>
+    </tbody>
+</table>
+{{/centro}}
+{{^centro}}
+<p class="alert alert-info">{{#str}} nocentro, local_sepe {{/str}}</p>
+{{/centro}}
+
+<h3>{{#str}} accionessection, local_sepe {{/str}}</h3>
+{{#hasacciones}}
+<table class="table generaltable">
+    <thead>
+        <tr>
+            <th scope="col">{{#str}} colcodigo, local_sepe {{/str}}</th>
+            <th scope="col">{{#str}} coldenominacion, local_sepe {{/str}}</th>
+            <th scope="col">{{#str}} colsituacion, local_sepe {{/str}}</th>
+            <th scope="col">{{#str}} colespecialidad, local_sepe {{/str}}</th>
+            <th scope="col">{{#str}} colfechas, local_sepe {{/str}}</th>
+            <th scope="col">{{#str}} colcourse, local_sepe {{/str}}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#acciones}}
+        <tr>
+            <td>{{codigo}}</td>
+            <td>{{denominacion}}</td>
+            <td>{{situacion}}</td>
+            <td>{{especialidad}}</td>
+            <td>{{fechas}}</td>
+            <td>
+                <form method="post" action="{{actionurl}}" class="d-flex align-items-center gap-1">
+                    <input type="hidden" name="sesskey" value="{{sesskey}}">
+                    <input type="hidden" name="action" value="map">
+                    <input type="hidden" name="accionid" value="{{id}}">
+                    <label class="visually-hidden" for="local-sepe-course-{{id}}">{{#str}} colcourse, local_sepe {{/str}}</label>
+                    <select class="form-select form-select-sm" name="courseid" id="local-sepe-course-{{id}}">
+                        <option value="0">{{#str}} notmapped, local_sepe {{/str}}</option>
+                        {{#options}}
+                        <option value="{{id}}" {{#selected}}selected{{/selected}}>{{name}}</option>
+                        {{/options}}
+                    </select>
+                    <button type="submit" class="btn btn-secondary btn-sm">{{#str}} savechanges, core {{/str}}</button>
+                </form>
+            </td>
+        </tr>
+        {{/acciones}}
+    </tbody>
+</table>
+{{/hasacciones}}
+{{^hasacciones}}
+<p class="alert alert-info">{{#str}} noacciones, local_sepe {{/str}}</p>
+{{/hasacciones}}
+
+<form method="post" action="{{actionurl}}" class="mb-4">
+    <input type="hidden" name="sesskey" value="{{sesskey}}">
+    <input type="hidden" name="action" value="reset">
+    <button type="submit" class="btn btn-danger"
+        data-confirmation="modal"
+        data-confirmation-title-str='["resetdata", "local_sepe"]'
+        data-confirmation-content-str='["resetdataconfirm", "local_sepe"]'
+        data-confirmation-yes-button-str='["resetdata", "local_sepe"]'>
+        {{#str}} resetdata, local_sepe {{/str}}
+    </button>
+</form>
+
+{{#canviewlogs}}
+<h3>{{#str}} logssection, local_sepe {{/str}}</h3>
+{{#haslogs}}
+<table class="table generaltable">
+    <thead>
+        <tr>
+            <th scope="col">{{#str}} coltime, local_sepe {{/str}}</th>
+            <th scope="col">{{#str}} coloperation, local_sepe {{/str}}</th>
+            <th scope="col">{{#str}} colip, local_sepe {{/str}}</th>
+            <th scope="col">{{#str}} colreturncode, local_sepe {{/str}}</th>
+            <th scope="col">{{#str}} error, core {{/str}}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#logs}}
+        <tr>
+            <td>{{time}}</td>
+            <td>{{operation}}</td>
+            <td>{{ip}}</td>
+            <td>{{returncode}}</td>
+            <td>{{errormsg}}</td>
+        </tr>
+        {{/logs}}
+    </tbody>
+</table>
+{{/haslogs}}
+{{^haslogs}}
+<p>{{#str}} nologs, local_sepe {{/str}}</p>
+{{/haslogs}}
+{{/canviewlogs}}

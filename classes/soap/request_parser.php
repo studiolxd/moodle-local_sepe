@@ -31,7 +31,6 @@ namespace local_sepe\soap;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class request_parser {
-
     /**
      * Returns the operation element, the first element child of the body.
      *
@@ -50,8 +49,10 @@ final class request_parser {
             if (!($child instanceof \DOMElement)) {
                 continue;
             }
-            if ($child->namespaceURI !== protocol::NS_IMPL
-                    || !in_array($child->localName, protocol::OPERATIONS, true)) {
+            if (
+                $child->namespaceURI !== protocol::NS_IMPL
+                    || !in_array($child->localName, protocol::OPERATIONS, true)
+            ) {
                 throw new client_fault_exception('Unknown operation: ' . $child->localName);
             }
             return $child;
@@ -134,7 +135,7 @@ final class request_parser {
             'contacto' => $this->optional_text($descripcion, 'CONTACTO_ACCION'),
             'especialidades' => [],
             'participantes' => [],
-            'rawxml' => $accion->ownerDocument->saveXML($accion),
+            'rawxml' => $this->standalone_fragment($accion),
         ];
 
         $especialidades = $this->child($accion, 'ESPECIALIDADES_ACCION');
@@ -216,6 +217,27 @@ final class request_parser {
         }
 
         return $result;
+    }
+
+    /**
+     * Serializes an element as a standalone unqualified fragment.
+     *
+     * saveXML() on a node does not redeclare inherited namespace prefixes,
+     * which would leave the stored XML unparseable on its own; instead the
+     * children (unqualified per the payload schema) are re-rooted under a
+     * namespace-free element with the same local name.
+     *
+     * @param \DOMElement $element element to serialize
+     * @return string self-contained XML fragment
+     */
+    private function standalone_fragment(\DOMElement $element): string {
+        $fragment = new \DOMDocument('1.0', 'UTF-8');
+        $root = $fragment->createElement($element->localName);
+        $fragment->appendChild($root);
+        foreach ($element->childNodes as $child) {
+            $root->appendChild($fragment->importNode($child, true));
+        }
+        return $fragment->saveXML($fragment->documentElement);
     }
 
     /**

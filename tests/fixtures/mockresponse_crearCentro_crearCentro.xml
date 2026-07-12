@@ -1,0 +1,22 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <p867:crearCentroResponse xmlns:p867="http://impl.ws.application.proveedorcentro.meyss.spee.es">
+         <p148:RESPUESTA_DATOS_CENTRO xmlns:p465="http://entsal.bean.domain.common.proveedorcentro.meyss.spee.es" xmlns:p148="http://salida.bean.domain.common.proveedorcentro.meyss.spee.es">
+            <CODIGO_RETORNO>0</CODIGO_RETORNO>
+            <ETIQUETA_ERROR xsi:nil="true"/>
+            <p465:DATOS_IDENTIFICATIVOS>
+               <ID_CENTRO>
+                  <ORIGEN_CENTRO>20</ORIGEN_CENTRO>
+                  <CODIGO_CENTRO>9999999999</CODIGO_CENTRO>
+               </ID_CENTRO>
+               <NOMBRE_CENTRO>Centro de teleformación número 00000001</NOMBRE_CENTRO>
+               <URL_PLATAFORMA>https://sede.sepe.gob.es/portalSede/flows/inicio</URL_PLATAFORMA>
+               <URL_SEGUIMIENTO>http://10.25.10.88:9080/ProveedorCentroTFWS/services/ProveedorCentroEndPoint</URL_SEGUIMIENTO>
+               <TELEFONO>915859999</TELEFONO>
+               <EMAIL>bajel@sepe.es</EMAIL>
+            </p465:DATOS_IDENTIFICATIVOS>
+         </p148:RESPUESTA_DATOS_CENTRO>
+      </p867:crearCentroResponse>
+   </soapenv:Body>
+</soapenv:Envelope>

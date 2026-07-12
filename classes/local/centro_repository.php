@@ -28,7 +28,6 @@ namespace local_sepe\local;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class centro_repository {
-
     /**
      * The centre row registered by SEPE, if any.
      *

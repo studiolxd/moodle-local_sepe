@@ -24,7 +24,6 @@ namespace local_sepe\task;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class cleanup_logs extends \core\task\scheduled_task {
-
     #[\Override]
     public function get_name() {
         return get_string('taskcleanuplogs', 'local_sepe');

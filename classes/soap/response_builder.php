@@ -32,7 +32,6 @@ namespace local_sepe\soap;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class response_builder {
-
     /** @var string XMLNS namespace used to declare prefixes. */
     private const NS_XMLNS = 'http://www.w3.org/2000/xmlns/';
 

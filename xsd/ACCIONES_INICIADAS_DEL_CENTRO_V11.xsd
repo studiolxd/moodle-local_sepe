@@ -363,7 +363,7 @@
 																							</xs:simpleType>
 																						</xs:element>
 																						<xs:element name="EXPERIENCIA_MODALIDAD_TELEFORMACION" type="xs:int"/>
-																						<xs:element name="FORMACION_MODALIDAD_TELEFORMACION ">
+																						<xs:element name="FORMACION_MODALIDAD_TELEFORMACION">
 																							<xs:simpleType>
 																								<xs:restriction base="xs:string">
 																									<xs:maxLength value="2"/>

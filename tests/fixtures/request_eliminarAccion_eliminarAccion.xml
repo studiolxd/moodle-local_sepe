@@ -1,0 +1,11 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:impl="http://impl.ws.application.proveedorcentro.meyss.spee.es" xmlns:ent="http://entsal.bean.domain.common.proveedorcentro.meyss.spee.es">
+   <soapenv:Header/>
+   <soapenv:Body>
+      <impl:eliminarAccion>
+         <ent:ID_ACCION>
+            <ORIGEN_ACCION>20</ORIGEN_ACCION>
+            <CODIGO_ACCION>2014280010</CODIGO_ACCION>
+         </ent:ID_ACCION>
+      </impl:eliminarAccion>
+   </soapenv:Body>
+</soapenv:Envelope>

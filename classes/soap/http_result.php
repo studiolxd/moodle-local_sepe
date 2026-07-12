@@ -24,7 +24,6 @@ namespace local_sepe\soap;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class http_result {
-
     /**
      * Constructor.
      *

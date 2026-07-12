@@ -27,16 +27,4 @@ namespace local_sepe\soap;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class auth_failed_exception extends \Exception {
-
-    /**
-     * Constructor.
-     *
-     * @param string $reason internal detail for the log, never sent to the client
-     */
-    public function __construct(
-        /** @var string Internal detail for the log. */
-        public readonly string $reason = 'Authentication failed',
-    ) {
-        parent::__construct($reason);
-    }
 }
