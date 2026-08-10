@@ -2,12 +2,14 @@
 
 ## 1.0.1 (2026-08-10)
 
-- Primera versión publicada. Sin cambios funcionales respecto a 1.0.0:
-  - Corrige dos `@param` documentados con genéricos
-    (`array<int, string>`, `array<int, \stdClass>`), que el comprobador de
-    phpdoc de Moodle contaba como lista de parámetros incompleta porque
-    solo acepta la notación `tipo[]` cuando el argumento se declara `array`.
-  - Elimina un `global $DB;` sin uso en `generator::students()`.
+Correcciones de calidad de código, sin cambios funcionales.
+
+- Corrige dos `@param` documentados con genéricos (`array<int, string>` en
+  `acciones_page::__construct` y `array<int, \stdClass>` en
+  `generator::build_participantes`), que el comprobador de phpdoc de Moodle
+  contaba como lista de parámetros incompleta porque solo acepta la
+  notación `tipo[]` cuando el argumento se declara `array`.
+- Elimina un `global $DB;` sin uso en `generator::students()`.
 - Verificado con moodle-plugin-ci 4.5.11 sobre Moodle 5.2.2 y PHP 8.4:
   phplint, phpcs, phpdoc, validate, savepoints y phpunit (28 tests,
   107 aserciones) en verde.
