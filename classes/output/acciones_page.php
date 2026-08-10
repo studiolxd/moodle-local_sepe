@@ -30,7 +30,7 @@ class acciones_page implements \renderable, \templatable {
      * @param \stdClass|null $centro centre registered by SEPE, null when not yet registered
      * @param \stdClass[] $acciones stored actions
      * @param \stdClass[] $logs latest log entries
-     * @param array<int, string> $courses course id => fullname options for mapping
+     * @param string[] $courses course id => fullname options for mapping
      * @param bool $canviewlogs whether the viewer may see the log section
      */
     public function __construct(

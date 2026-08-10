@@ -104,8 +104,6 @@ final class generator {
      * @return array<int, \stdClass> user records keyed by id
      */
     private function students(\context_course $context): array {
-        global $DB;
-
         $studentroles = array_keys(get_archetype_roles('student'));
         if ($studentroles === []) {
             return [];
@@ -154,7 +152,7 @@ final class generator {
      * @param \DOMDocument $doc owner document
      * @param \stdClass $accion local_sepe_accion record
      * @param \stdClass $course course record
-     * @param array<int, \stdClass> $students student records keyed by id
+     * @param \stdClass[] $students student records keyed by id
      * @return \DOMElement PARTICIPANTES element
      */
     private function build_participantes(\DOMDocument $doc, \stdClass $accion, \stdClass $course, array $students): \DOMElement {
