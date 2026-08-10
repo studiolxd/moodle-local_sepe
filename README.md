@@ -131,4 +131,18 @@ dicha obligación.
 
 ## Licencia
 
-GPL v3 o posterior. © 2026 Studio LXD.
+El código de este plugin se distribuye bajo GPL v3 o posterior (texto completo
+en `LICENSE`). © 2026 Studio LXD.
+
+Quedan **fuera** de esa licencia los artefactos oficiales del SEPE que se
+incluyen por necesidad técnica, obra de su titular y sujetos al aviso legal de
+[sepe.es](https://www.sepe.es):
+
+- `wsdl/ProveedorCentroTFWS.wsdl` — WSDL oficial (junio 2014). Única
+  modificación: el `soap:address` se parametriza como `@@ENDPOINTURL@@` para
+  servirlo desde `endpoint.php?wsdl` con la URL del sitio.
+- `xsd/ACCIONES_INICIADAS_DEL_CENTRO_V11.xsd` — XSD oficial, con la corrección
+  del espacio final documentada más arriba.
+- `tests/fixtures/*.xml` — peticiones y respuestas de ejemplo del kit de
+  autoevaluación `ProvCentTFVal_20161118`, usadas para reproducir la batería
+  de validación en los tests.
