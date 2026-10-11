@@ -22,6 +22,7 @@ namespace local_sepe\tracking;
  * @package    local_sepe
  * @copyright  2026 Studio LXD <hello@studiolxd.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \local_sepe\tracking\nif
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(nif::class)]
 final class nif_test extends \basic_testcase {

@@ -26,6 +26,9 @@ namespace local_sepe\soap;
  * @package    local_sepe
  * @copyright  2026 Studio LXD <hello@studiolxd.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \local_sepe\soap\server
+ * @covers     \local_sepe\soap\request_parser
+ * @covers     \local_sepe\soap\response_builder
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(server::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(request_parser::class)]

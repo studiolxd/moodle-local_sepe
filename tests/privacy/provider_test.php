@@ -28,6 +28,7 @@ use core_privacy\local\request\writer;
  * @package    local_sepe
  * @copyright  2026 Studio LXD <hello@studiolxd.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \local_sepe\privacy\provider
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(provider::class)]
 final class provider_test extends \core_privacy\tests\provider_testcase {

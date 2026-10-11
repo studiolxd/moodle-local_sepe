@@ -25,6 +25,8 @@ use local_sepe\soap\request_parser;
  * @package    local_sepe
  * @copyright  2026 Studio LXD <hello@studiolxd.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \local_sepe\tracking\generator
+ * @covers     \local_sepe\tracking\usage_calculator
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(generator::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(usage_calculator::class)]

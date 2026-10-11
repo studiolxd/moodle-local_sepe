@@ -22,6 +22,8 @@ namespace local_sepe\local;
  * @package    local_sepe
  * @copyright  2026 Studio LXD <hello@studiolxd.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \local_sepe\local\reset_service
+ * @covers     \local_sepe\event\data_reset
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(reset_service::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\local_sepe\event\data_reset::class)]

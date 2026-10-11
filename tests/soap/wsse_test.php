@@ -22,6 +22,7 @@ namespace local_sepe\soap;
  * @package    local_sepe
  * @copyright  2026 Studio LXD <hello@studiolxd.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \local_sepe\soap\wsse
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(wsse::class)]
 final class wsse_test extends \advanced_testcase {

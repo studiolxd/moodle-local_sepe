@@ -22,6 +22,11 @@ namespace local_sepe\event;
  * @package    local_sepe
  * @copyright  2026 Studio LXD <hello@studiolxd.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers     \local_sepe\event\accion_created
+ * @covers     \local_sepe\event\accion_deleted
+ * @covers     \local_sepe\event\accion_mapped
+ * @covers     \local_sepe\event\centro_updated
+ * @covers     \local_sepe\event\data_reset
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(accion_created::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(accion_deleted::class)]
