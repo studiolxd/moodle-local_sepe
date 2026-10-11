@@ -29,13 +29,25 @@ use local_sepe\soap\request_parser;
 #[\PHPUnit\Framework\Attributes\CoversClass(generator::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(usage_calculator::class)]
 final class generator_test extends \advanced_testcase {
+    #[\Override]
+    protected function setUp(): void {
+        parent::setUp();
+        $this->resetAfterTest();
+        // Usage figures come from the standard log store, disabled by default in PHPUnit.
+        set_config('enabled_stores', 'logstore_standard', 'tool_log');
+    }
+
     /**
      * Creates the fixture action mapped to a fresh course.
+     *
+     * The fixture dates (2014) are moved to June 2026, where the test
+     * sessions happen, since only activity within the action is counted.
      *
      * @param int $courseid course to map the action to
      * @return \stdClass local_sepe_accion record
      */
     private function create_mapped_accion(int $courseid): \stdClass {
+        global $DB;
         $raw = file_get_contents(__DIR__ . '/../fixtures/request_crearAccion_crearAccion_2014280010.xml');
         $doc = new \DOMDocument();
         $doc->loadXML($raw);
@@ -45,6 +57,11 @@ final class generator_test extends \advanced_testcase {
         $repository = new accion_repository();
         $record = $repository->create($parsed);
         $repository->set_course($record->id, $courseid);
+        $DB->update_record('local_sepe_accion', (object)[
+            'id' => $record->id,
+            'fecha_inicio' => '01/06/2026',
+            'fecha_fin' => '30/06/2026',
+        ]);
         return $repository->get('20', '2014280010');
     }
 
@@ -115,6 +132,19 @@ final class generator_test extends \advanced_testcase {
             make_timestamp(2026, 6, 2, 16, 0, 0),
             make_timestamp(2026, 6, 2, 17, 30, 0)
         );
+        // Activity outside the action period (01/06/2026-30/06/2026) is ignored.
+        $this->insert_session(
+            $course,
+            $completed->id,
+            make_timestamp(2026, 5, 20, 9, 0, 0),
+            make_timestamp(2026, 5, 20, 12, 0, 0)
+        );
+        $this->insert_session(
+            $course,
+            $completed->id,
+            make_timestamp(2026, 7, 1, 9, 0, 0),
+            make_timestamp(2026, 7, 1, 12, 0, 0)
+        );
 
         // Final course grade 8.5/10 and completion for the first student.
         $courseitem = \grade_item::fetch_course_item($course->id);
@@ -125,6 +155,8 @@ final class generator_test extends \advanced_testcase {
 
         $accion = $this->create_mapped_accion($course->id);
         $xml = generator::for_accion($accion);
+        // The student without NIF is skipped and reported through debugging.
+        $this->assertDebuggingCalled();
         $this->assertNotNull($xml);
 
         $doc = new \DOMDocument();
@@ -138,7 +170,7 @@ final class generator_test extends \advanced_testcase {
         $this->assertStringNotContainsString('<NUM_DOCUMENTO>0099999999</NUM_DOCUMENTO>', $xml);
 
         // Results: completed with 8.5 → 3/850/850; the action end date
-        // (14/12/2014) has passed, so the other student reports 5.
+        // (30/06/2026) has passed, so the other student reports 5.
         $results = $this->results_by_document($doc);
         $this->assertSame(
             ['resultado' => '3', 'calificacion' => '850', 'puntuacion' => '850'],
@@ -164,12 +196,137 @@ final class generator_test extends \advanced_testcase {
         $this->assert_validates_against_xsd($xml);
     }
 
+    public function test_participants_are_enrolled_users_with_graded_roles(): void {
+        global $CFG, $DB;
+        $this->resetAfterTest();
+        set_config('niffield', 'idnumber', 'local_sepe');
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $context = \context_course::instance($course->id);
+
+        // A custom student role counts once it is one of the graded roles.
+        $customrole = $generator->create_role(['shortname' => 'alumnosepe', 'archetype' => 'student']);
+        set_config('gradebookroles', $CFG->gradebookroles . ',' . $customrole);
+
+        $student = $generator->create_user(['idnumber' => '12345678Z']);
+        $custom = $generator->create_user(['idnumber' => 'X1234567L']);
+        $suspended = $generator->create_user(['idnumber' => '87654321X']);
+        $notenrolled = $generator->create_user(['idnumber' => '11111111H']);
+        $generator->enrol_user($student->id, $course->id, 'student');
+        $generator->enrol_user($custom->id, $course->id, 'alumnosepe');
+        $generator->enrol_user($suspended->id, $course->id, 'student', 'manual', 0, 0, ENROL_USER_SUSPENDED);
+        // A role assignment without an enrolment does not make a participant.
+        role_assign($DB->get_field('role', 'id', ['shortname' => 'student']), $notenrolled->id, $context->id);
+
+        $xml = generator::for_accion($this->create_mapped_accion($course->id));
+        $this->assertNotNull($xml);
+        $doc = new \DOMDocument();
+        $doc->loadXML($xml);
+        $results = $this->results_by_document($doc);
+
+        $this->assertEqualsCanonicalizing(['0012345678', '00X1234567', '0087654321'], array_keys($results));
+        // The suspended enrolment is reported as a drop-out.
+        $this->assertSame('2', $results['0087654321']['resultado']);
+    }
+
+    public function test_nif_from_custom_profile_field(): void {
+        $this->resetAfterTest();
+        set_config('niffield', 'profile_nif', 'local_sepe');
+
+        $generator = $this->getDataGenerator();
+        $generator->create_custom_profile_field(['datatype' => 'text', 'shortname' => 'nif', 'name' => 'NIF']);
+        $course = $generator->create_course();
+        $withnif = $generator->create_user(['idnumber' => 'ignored', 'profile_field_nif' => '12345678-Z']);
+        $withoutnif = $generator->create_user(['idnumber' => '87654321X']);
+        $generator->enrol_user($withnif->id, $course->id, 'student');
+        $generator->enrol_user($withoutnif->id, $course->id, 'student');
+
+        $xml = generator::for_accion($this->create_mapped_accion($course->id));
+        // The student without a value in the profile field is skipped.
+        $this->assertDebuggingCalled();
+        $this->assertNotNull($xml);
+        $doc = new \DOMDocument();
+        $doc->loadXML($xml);
+        $this->assertSame(['0012345678'], array_keys($this->results_by_document($doc)));
+    }
+
+    public function test_unknown_nif_field_reports_no_participants(): void {
+        $this->resetAfterTest();
+        set_config('niffield', 'nosuchcolumn', 'local_sepe');
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $student = $generator->create_user(['idnumber' => '12345678Z']);
+        $generator->enrol_user($student->id, $course->id, 'student');
+
+        $xml = generator::for_accion($this->create_mapped_accion($course->id));
+        $this->assertNotNull($xml);
+        $this->assertDebuggingCalledCount(2);
+        $this->assertStringNotContainsString('<PARTICIPANTE>', $xml);
+    }
+
+    public function test_tracking_xml_is_cached(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $accion = $this->create_mapped_accion($course->id);
+
+        // First request generates and stores the XML.
+        $this->assertNull($accion->trackingxml);
+        $xml = generator::tracking_xml($accion);
+        $this->assertNotNull($xml);
+        $stored = $DB->get_record('local_sepe_accion', ['id' => $accion->id]);
+        $this->assertSame($xml, $stored->trackingxml);
+        $this->assertGreaterThan(0, (int)$stored->trackinggenerated);
+
+        // A fresh cache is served as is.
+        $stored->trackingxml = '<ACCION_FORMATIVA>cached</ACCION_FORMATIVA>';
+        $this->assertSame($stored->trackingxml, generator::tracking_xml($stored));
+
+        // An expired cache is regenerated...
+        $stored->trackinggenerated = time() - generator::CACHE_TTL - 1;
+        $this->assertSame($xml, generator::tracking_xml($stored));
+
+        // ...and so is a fresh one on a forced refresh.
+        $stored->trackinggenerated = time();
+        $this->assertSame($xml, generator::refresh($stored));
+
+        // Remapping the action discards the cache.
+        (new accion_repository())->set_course($accion->id, $course->id);
+        $this->assertNull($DB->get_field('local_sepe_accion', 'trackingxml', ['id' => $accion->id]));
+    }
+
+    public function test_tracking_xml_serves_recent_cache_when_generation_fails(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $accion = $this->create_mapped_accion($course->id);
+        $accion->courseid = -1;
+
+        // Within the 7 days SEPE accepts, the last good XML is served.
+        $accion->trackingxml = '<ACCION_FORMATIVA>cached</ACCION_FORMATIVA>';
+        $accion->trackinggenerated = time() - generator::CACHE_TTL - 1;
+        $this->assertSame($accion->trackingxml, generator::tracking_xml($accion));
+        $this->assertDebuggingCalled();
+
+        // Older than that, nothing is served (callers fall back to rawxml).
+        $accion->trackinggenerated = time() - generator::MAX_STALE - 1;
+        $this->assertNull(generator::tracking_xml($accion));
+        $this->assertDebuggingCalled();
+    }
+
     public function test_returns_null_when_course_is_missing(): void {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
         $accion = $this->create_mapped_accion($course->id);
         delete_course($course->id, false);
 
+        // The observer unmaps the action...
+        $this->assertNull((new accion_repository())->get('20', '2014280010')->courseid);
+
+        // ...and a stale record still fails gracefully.
         $this->assertNull(generator::for_accion($accion));
         $this->assertDebuggingCalled();
     }

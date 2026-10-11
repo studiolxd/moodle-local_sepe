@@ -56,6 +56,28 @@ final class accion_repository {
     }
 
     /**
+     * Fetches an action by its record id.
+     *
+     * @param int $id action record id
+     * @return \stdClass the record
+     * @throws \dml_missing_record_exception when it does not exist
+     */
+    public function get_by_id(int $id): \stdClass {
+        global $DB;
+        return $DB->get_record('local_sepe_accion', ['id' => $id], '*', MUST_EXIST);
+    }
+
+    /**
+     * Number of stored actions.
+     *
+     * @return int
+     */
+    public function count(): int {
+        global $DB;
+        return $DB->count_records('local_sepe_accion');
+    }
+
+    /**
      * Identifiers of every stored action, in insertion order.
      *
      * @return \stdClass[] objects with origen_accion and codigo_accion
@@ -68,11 +90,18 @@ final class accion_repository {
     /**
      * Every stored action with its mapped course, for the admin page.
      *
+     * Only the summary columns are fetched: the XML columns can be large.
+     *
      * @return \stdClass[]
      */
     public function list_all(): array {
         global $DB;
-        return array_values($DB->get_records('local_sepe_accion', [], 'id ASC'));
+        return array_values($DB->get_records(
+            'local_sepe_accion',
+            [],
+            'id ASC',
+            'id, origen_accion, codigo_accion, situacion, codigo_especialidad, fecha_inicio, fecha_fin, denominacion, courseid'
+        ));
     }
 
     /**
@@ -167,6 +196,9 @@ final class accion_repository {
     /**
      * Maps an action to a Moodle course (or unmaps it with null).
      *
+     * Any cached tracking XML is discarded, since it belonged to the
+     * previous mapping.
+     *
      * @param int $accionid action record id
      * @param int|null $courseid course id, or null to unmap
      */
@@ -175,8 +207,63 @@ final class accion_repository {
         $DB->update_record('local_sepe_accion', (object)[
             'id' => $accionid,
             'courseid' => $courseid,
+            'trackingxml' => null,
+            'trackinggenerated' => null,
             'timemodified' => time(),
         ]);
+    }
+
+    /**
+     * Unmaps every action mapped to a course, e.g. when the course is deleted.
+     *
+     * @param int $courseid course id
+     * @return int number of actions unmapped
+     */
+    public function unmap_course(int $courseid): int {
+        global $DB;
+        $ids = $DB->get_fieldset_select('local_sepe_accion', 'id', 'courseid = ?', [$courseid]);
+        foreach ($ids as $id) {
+            $this->set_course((int)$id, null);
+        }
+        return count($ids);
+    }
+
+    /**
+     * Stores the tracking XML generated for an action.
+     *
+     * @param int $accionid action record id
+     * @param string $xml generated ACCION_FORMATIVA fragment
+     * @param int $timegenerated generation time
+     */
+    public function store_tracking(int $accionid, string $xml, int $timegenerated): void {
+        global $DB;
+        $DB->update_record('local_sepe_accion', (object)[
+            'id' => $accionid,
+            'trackingxml' => $xml,
+            'trackinggenerated' => $timegenerated,
+        ]);
+    }
+
+    /**
+     * Discards the cached tracking XML of some or all actions.
+     *
+     * It is regenerated on the next request or task run.
+     *
+     * @param int[]|null $accionids action record ids, null for every action
+     */
+    public function clear_tracking(?array $accionids = null): void {
+        global $DB;
+        if ($accionids === null) {
+            $DB->set_field_select('local_sepe_accion', 'trackingxml', null, 'trackingxml IS NOT NULL');
+            $DB->set_field_select('local_sepe_accion', 'trackinggenerated', null, 'trackinggenerated IS NOT NULL');
+            return;
+        }
+        if ($accionids === []) {
+            return;
+        }
+        [$insql, $params] = $DB->get_in_or_equal($accionids);
+        $DB->set_field_select('local_sepe_accion', 'trackingxml', null, "id $insql", $params);
+        $DB->set_field_select('local_sepe_accion', 'trackinggenerated', null, "id $insql", $params);
     }
 
     /**

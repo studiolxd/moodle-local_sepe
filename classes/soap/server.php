@@ -73,14 +73,19 @@ final class server {
             'operation' => '',
             'ip' => $ip,
             'returncode' => null,
-            'requestxml' => $rawxml,
+            'requestxml' => null,
             'responsexml' => null,
             'errormsg' => null,
         ];
+        $authenticated = false;
 
         try {
+            if (strlen($rawxml) > protocol::MAX_REQUEST_BYTES) {
+                throw new client_fault_exception('Request too large');
+            }
             $doc = $this->parse_document($rawxml);
             wsse::authenticate($doc);
+            $authenticated = true;
             $operation = $this->parser->operation($doc);
             $log->operation = $operation->localName;
             $body = $this->dispatch($operation->localName, $operation, $log);
@@ -103,6 +108,13 @@ final class server {
             $log->responsexml = $body;
             return new http_result(500, $body);
         } finally {
+            // The password is never logged, and unauthenticated requests
+            // only keep a prefix, so anonymous traffic cannot fill the log.
+            $requestxml = wsse::redact($rawxml);
+            if (!$authenticated) {
+                $requestxml = \core_text::substr($requestxml, 0, protocol::UNAUTHENTICATED_LOG_BYTES);
+            }
+            $log->requestxml = $requestxml;
             $this->logs->insert($log);
         }
     }
@@ -274,9 +286,10 @@ final class server {
     /**
      * obtenerAccion: returns the tracking data of an action.
      *
-     * Actions mapped to a Moodle course answer with live tracking data
-     * regenerated from the course; unmapped actions (including the
-     * validator's test data) echo the verbatim XML received on creation.
+     * Actions mapped to a Moodle course answer with tracking data generated
+     * from the course (cached up to a day, see generator::tracking_xml());
+     * unmapped actions (including the validator's test data) echo the
+     * verbatim XML received on creation.
      *
      * @param \DOMElement $operation operation element
      * @param \stdClass $log log record being built
@@ -292,10 +305,7 @@ final class server {
 
         $xml = $accion->rawxml;
         if (!empty($accion->courseid)) {
-            $generated = \local_sepe\tracking\generator::for_accion($accion);
-            if ($generated !== null) {
-                $xml = $generated;
-            }
+            $xml = \local_sepe\tracking\generator::tracking_xml($accion) ?? $xml;
         }
 
         $log->returncode = protocol::RET_OK;

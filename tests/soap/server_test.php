@@ -248,4 +248,53 @@ final class server_test extends \advanced_testcase {
         $this->assertSame('0', (string)$log->returncode);
         $this->assertSame('127.0.0.1', $log->ip);
     }
+
+    public function test_logged_request_never_contains_the_password(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->configure_service();
+
+        $this->handle('request_obtenerDatosCentro_obtenerDatosCentro.xml');
+        $this->handle('request_obtenerDatosCentro_obtenerDatosCentro.xml', 'wrong-password');
+
+        $logs = $DB->get_records('local_sepe_wslog', null, 'id ASC');
+        $this->assertCount(2, $logs);
+        foreach ($logs as $log) {
+            $this->assertStringNotContainsString(self::PASSWORD, $log->requestxml);
+            $this->assertStringNotContainsString('wrong-password', $log->requestxml);
+            $this->assertStringContainsString('***</wsse:Password>', $log->requestxml);
+        }
+    }
+
+    public function test_unauthenticated_requests_are_logged_truncated(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->configure_service();
+
+        $raw = file_get_contents(__DIR__ . '/../fixtures/request_crearAccion_crearAccion_2014280010.xml');
+        $raw = str_replace('</soapenv:Body>', str_repeat('<!-- padding -->', 1000) . '</soapenv:Body>', $raw);
+        $result = (new server())->handle($this->authenticated($raw, 'wrong-password'), '127.0.0.1');
+        $this->assertSame(500, $result->status);
+
+        $log = $DB->get_record('local_sepe_wslog', []);
+        $this->assertSame('auth', $log->operation);
+        $this->assertSame(protocol::UNAUTHENTICATED_LOG_BYTES, \core_text::strlen($log->requestxml));
+        $this->assertSame(0, $DB->count_records('local_sepe_accion'));
+    }
+
+    public function test_oversized_request_is_rejected(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->configure_service();
+
+        $raw = file_get_contents(__DIR__ . '/../fixtures/request_obtenerDatosCentro_obtenerDatosCentro.xml');
+        $raw = str_replace('</soapenv:Body>', str_repeat(' ', protocol::MAX_REQUEST_BYTES) . '</soapenv:Body>', $raw);
+        $result = (new server())->handle($this->authenticated($raw, self::PASSWORD), '127.0.0.1');
+
+        $this->assertSame(500, $result->status);
+        $this->assertStringContainsString('Request too large', $result->body);
+        $log = $DB->get_record('local_sepe_wslog', []);
+        $this->assertSame('fault', $log->operation);
+        $this->assertLessThanOrEqual(protocol::UNAUTHENTICATED_LOG_BYTES, strlen($log->requestxml));
+    }
 }

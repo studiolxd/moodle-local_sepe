@@ -55,12 +55,7 @@ if ($options['help'] || !$options['run']) {
     exit(0);
 }
 
-$acciones = new \local_sepe\local\accion_repository();
-$centros = new \local_sepe\local\centro_repository();
-
-$count = count($acciones->list_ids());
-$acciones->delete_all();
-$centros->reset();
+$count = (new \local_sepe\local\reset_service())->reset();
 
 cli_writeln("Deleted centre registration and {$count} training action(s).");
 exit(0);

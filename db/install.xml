@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/sepe/db" VERSION="20260712" COMMENT="XMLDB file for Moodle local/sepe"
+<XMLDB PATH="local/sepe/db" VERSION="20261011" COMMENT="XMLDB file for Moodle local/sepe"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -46,6 +46,8 @@
         <FIELD NAME="contacto" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="CONTACTO_ACCION"/>
         <FIELD NAME="rawxml" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Verbatim ACCION_FORMATIVA XML fragment as received, echoed back to SEPE"/>
         <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Moodle course mapped to this action; null until mapped"/>
+        <FIELD NAME="trackingxml" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Last tracking XML generated from the mapped course; null when not generated or invalidated"/>
+        <FIELD NAME="trackinggenerated" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="When trackingxml was generated"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
       </FIELDS>
@@ -91,13 +93,11 @@
         <FIELD NAME="competencia_docente" TYPE="char" LENGTH="2" NOTNULL="false" SEQUENCE="false" COMMENT="COMPETENCIA_DOCENTE SI/NO"/>
         <FIELD NAME="experiencia_teleformacion" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="EXPERIENCIA_MODALIDAD_TELEFORMACION in years"/>
         <FIELD NAME="formacion_teleformacion" TYPE="char" LENGTH="2" NOTNULL="false" SEQUENCE="false" COMMENT="FORMACION_MODALIDAD_TELEFORMACION SI/NO"/>
-        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Moodle user mapped to this tutor; null until mapped"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="accionid" TYPE="foreign" FIELDS="accionid" REFTABLE="local_sepe_accion" REFFIELDS="id"/>
         <KEY NAME="especialidadid" TYPE="foreign" FIELDS="especialidadid" REFTABLE="local_sepe_especialidad" REFFIELDS="id"/>
-        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
     <TABLE NAME="local_sepe_participante" COMMENT="Participants (alumnado) of a training action; contains third-party personal data received from SEPE">
@@ -108,12 +108,10 @@
         <FIELD NAME="num_documento" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="NUM_DOCUMENTO"/>
         <FIELD NAME="letra_nif" TYPE="char" LENGTH="1" NOTNULL="true" SEQUENCE="false" COMMENT="LETRA_NIF"/>
         <FIELD NAME="competencias_clave" TYPE="char" LENGTH="2" NOTNULL="false" SEQUENCE="false" COMMENT="INDICADOR_COMPETENCIAS_CLAVE SI/NO"/>
-        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Moodle user mapped to this participant; null until mapped"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="accionid" TYPE="foreign" FIELDS="accionid" REFTABLE="local_sepe_accion" REFFIELDS="id"/>
-        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
     <TABLE NAME="local_sepe_wslog" COMMENT="Log of SOAP requests received on the SEPE tracking web service endpoint">

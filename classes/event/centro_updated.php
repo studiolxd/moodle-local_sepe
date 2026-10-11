@@ -41,4 +41,25 @@ class centro_updated extends \core\event\base {
         return "SEPE registered the centre '{$this->other['codigo_centro']}' "
             . "(origin '{$this->other['origen_centro']}') through the tracking web service.";
     }
+
+    #[\Override]
+    protected function validate_data() {
+        parent::validate_data();
+        if (!isset($this->other['origen_centro'])) {
+            throw new \coding_exception("The 'origen_centro' value must be set in other.");
+        }
+        if (!isset($this->other['codigo_centro'])) {
+            throw new \coding_exception("The 'codigo_centro' value must be set in other.");
+        }
+    }
+
+    #[\Override]
+    public static function get_objectid_mapping() {
+        return ['db' => 'local_sepe_centro', 'restore' => \core\event\base::NOT_MAPPED];
+    }
+
+    #[\Override]
+    public static function get_other_mapping() {
+        return false;
+    }
 }

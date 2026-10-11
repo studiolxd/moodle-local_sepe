@@ -112,4 +112,22 @@ final class wsse_test extends \advanced_testcase {
         $this->expectException(auth_failed_exception::class);
         wsse::authenticate($this->envelope());
     }
+
+    public function test_redact_masks_every_password_form(): void {
+        $prefixed = '<wsse:Password Type="x#PasswordText">s3cret</wsse:Password>';
+        $this->assertSame('<wsse:Password Type="x#PasswordText">***</wsse:Password>', wsse::redact($prefixed));
+
+        $unprefixed = '<Password>s3cret</Password>';
+        $this->assertSame('<Password>***</Password>', wsse::redact($unprefixed));
+
+        $cdata = '<o:Password><![CDATA[a<b]]></o:Password>';
+        $this->assertSame('<o:Password>***</o:Password>', wsse::redact($cdata));
+
+        // A self-closing element has no content and must not swallow the rest.
+        $selfclosing = '<wsse:Password/><x>keep</x><wsse:Password>s3cret</wsse:Password>';
+        $this->assertSame('<wsse:Password/><x>keep</x><wsse:Password>***</wsse:Password>', wsse::redact($selfclosing));
+
+        // Similar element names are left alone.
+        $this->assertSame('<PasswordHint>hi</PasswordHint>', wsse::redact('<PasswordHint>hi</PasswordHint>'));
+    }
 }

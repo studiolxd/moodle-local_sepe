@@ -40,24 +40,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $endpoint = $CFG->wwwroot . '/local/sepe/endpoint.php';
         $wsdl = str_replace('@@ENDPOINTURL@@', $endpoint, $wsdl);
         @header('Content-Type: text/xml; charset=UTF-8');
+        @header('Cache-Control: public, max-age=3600');
         echo $wsdl;
         exit;
     }
-    @header('HTTP/1.1 405 Method Not Allowed');
+    http_response_code(405);
     @header('Allow: POST');
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    @header('HTTP/1.1 405 Method Not Allowed');
+    http_response_code(405);
     @header('Allow: POST');
     exit;
 }
 
-$rawxml = file_get_contents('php://input');
+// Read at most one byte over the limit: the server rejects anything larger
+// without the whole body ever being held in memory.
+$rawxml = (string)file_get_contents('php://input', false, null, 0, \local_sepe\soap\protocol::MAX_REQUEST_BYTES + 1);
 $server = new \local_sepe\soap\server();
 $result = $server->handle($rawxml, getremoteaddr());
 
-@header('HTTP/1.1 ' . ($result->status === 500 ? '500 Internal Server Error' : '200 OK'));
+http_response_code($result->status);
 @header('Content-Type: text/xml; charset=UTF-8');
 echo $result->body;

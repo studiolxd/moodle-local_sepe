@@ -41,4 +41,25 @@ class accion_deleted extends \core\event\base {
         return "SEPE deleted the training action '{$this->other['codigo_accion']}' "
             . "(origin '{$this->other['origen_accion']}') through the tracking web service.";
     }
+
+    #[\Override]
+    protected function validate_data() {
+        parent::validate_data();
+        if (!isset($this->other['origen_accion'])) {
+            throw new \coding_exception("The 'origen_accion' value must be set in other.");
+        }
+        if (!isset($this->other['codigo_accion'])) {
+            throw new \coding_exception("The 'codigo_accion' value must be set in other.");
+        }
+    }
+
+    #[\Override]
+    public static function get_objectid_mapping() {
+        return ['db' => 'local_sepe_accion', 'restore' => \core\event\base::NOT_MAPPED];
+    }
+
+    #[\Override]
+    public static function get_other_mapping() {
+        return false;
+    }
 }

@@ -25,7 +25,11 @@ namespace local_sepe\tracking;
  * full to the SEPE time band where it started — mañana 7:00-15:00,
  * tarde 15:00-23:00, noche 23:00-7:00 — and band totals are reported in
  * whole hours with the rounding rule of the data model (fractions of
- * up to 0.5 round down, above 0.5 round up).
+ * up to 0.5 round down, above 0.5 round up). Only activity within the
+ * period of the action is counted.
+ *
+ * Participants are given as a subquery (see generator::students_sql()),
+ * never as an IN list.
  *
  * @package    local_sepe
  * @copyright  2026 Studio LXD <hello@studiolxd.com>
@@ -42,13 +46,22 @@ final class usage_calculator {
      * Constructor.
      *
      * @param int $courseid course being tracked
-     * @param int[] $userids participant user ids
+     * @param string $usersql SQL returning an "id" column with the participant ids
+     * @param array $userparams named params of $usersql
+     * @param int|null $timefrom start of the action period, null for no lower bound
+     * @param int|null $timeto end of the action period, null for no upper bound
      */
     public function __construct(
         /** @var int Course id. */
         private readonly int $courseid,
-        /** @var int[] Participant user ids. */
-        private readonly array $userids,
+        /** @var string Participants subquery. */
+        private readonly string $usersql,
+        /** @var array Named params of the participants subquery. */
+        private readonly array $userparams,
+        /** @var int|null Start of the action period. */
+        private readonly ?int $timefrom = null,
+        /** @var int|null End of the action period. */
+        private readonly ?int $timeto = null,
     ) {
     }
 
@@ -66,41 +79,43 @@ final class usage_calculator {
             $result[$band] = ['participantes' => [], 'accesos' => 0, 'seconds' => 0];
         }
 
-        if ($this->userids !== []) {
-            [$insql, $params] = $DB->get_in_or_equal($this->userids, SQL_PARAMS_NAMED);
-            $params['courseid'] = $this->courseid;
-            $rs = $DB->get_recordset_select(
-                'logstore_standard_log',
-                "courseid = :courseid AND userid $insql",
-                $params,
-                'userid ASC, timecreated ASC',
-                'id, userid, timecreated'
-            );
-
-            $user = null;
-            $start = null;
-            $last = null;
-            $close = function () use (&$user, &$start, &$last, &$result) {
-                if ($start === null) {
-                    return;
-                }
-                $band = $this->band($start);
-                $result[$band]['participantes'][$user] = true;
-                $result[$band]['accesos']++;
-                $result[$band]['seconds'] += $last - $start;
-            };
-
-            foreach ($rs as $entry) {
-                if ($user !== $entry->userid || $entry->timecreated - $last > self::SESSION_GAP) {
-                    $close();
-                    $user = $entry->userid;
-                    $start = $entry->timecreated;
-                }
-                $last = $entry->timecreated;
-            }
-            $close();
-            $rs->close();
+        $enabledstores = explode(',', (string)get_config('tool_log', 'enabled_stores'));
+        if (!in_array('logstore_standard', $enabledstores, true)) {
+            debugging('local_sepe: logstore_standard is disabled, SEPE usage figures will be incomplete', DEBUG_DEVELOPER);
         }
+
+        [$select, $params] = $this->log_select();
+        $rs = $DB->get_recordset_select(
+            'logstore_standard_log',
+            $select,
+            $params,
+            'userid ASC, timecreated ASC',
+            'id, userid, timecreated'
+        );
+
+        $user = null;
+        $start = null;
+        $last = null;
+        $close = function () use (&$user, &$start, &$last, &$result) {
+            if ($start === null) {
+                return;
+            }
+            $band = $this->band($start);
+            $result[$band]['participantes'][$user] = true;
+            $result[$band]['accesos']++;
+            $result[$band]['seconds'] += $last - $start;
+        };
+
+        foreach ($rs as $entry) {
+            if ($user !== $entry->userid || $entry->timecreated - $last > self::SESSION_GAP) {
+                $close();
+                $user = $entry->userid;
+                $start = $entry->timecreated;
+            }
+            $last = $entry->timecreated;
+        }
+        $close();
+        $rs->close();
 
         foreach (self::BANDS as $band) {
             $result[$band] = [
@@ -110,6 +125,25 @@ final class usage_calculator {
             ];
         }
         return $result;
+    }
+
+    /**
+     * Log store conditions: the course, its participants and the action period.
+     *
+     * @return array{0: string, 1: array} WHERE clause and its named params
+     */
+    private function log_select(): array {
+        $select = "courseid = :sepelogcourse AND userid IN ({$this->usersql})";
+        $params = $this->userparams + ['sepelogcourse' => $this->courseid];
+        if ($this->timefrom !== null) {
+            $select .= ' AND timecreated >= :sepelogfrom';
+            $params['sepelogfrom'] = $this->timefrom;
+        }
+        if ($this->timeto !== null) {
+            $select .= ' AND timecreated <= :sepelogto';
+            $params['sepelogto'] = $this->timeto;
+        }
+        return [$select, $params];
     }
 
     /**
@@ -125,25 +159,21 @@ final class usage_calculator {
     public function seguimiento_evaluacion(): array {
         global $DB;
 
-        if ($this->userids === []) {
-            return ['participantes' => 0, 'aprendizaje' => 0, 'intentos' => 0, 'evaluacion' => 0];
-        }
-
-        [$insql, $inparams] = $DB->get_in_or_equal($this->userids, SQL_PARAMS_NAMED);
-        $params = array_merge(['courseid' => $this->courseid], $inparams);
+        $params = $this->userparams + ['sepecourse' => $this->courseid];
+        $insql = "IN ({$this->usersql})";
 
         $completionusers = $DB->get_fieldset_sql(
             "SELECT DISTINCT cmc.userid
                FROM {course_modules_completion} cmc
                JOIN {course_modules} cm ON cm.id = cmc.coursemoduleid
-              WHERE cm.course = :courseid AND cmc.completionstate > 0 AND cmc.userid $insql",
+              WHERE cm.course = :sepecourse AND cmc.completionstate > 0 AND cmc.userid $insql",
             $params
         );
         $gradeusers = $DB->get_fieldset_sql(
             "SELECT DISTINCT gg.userid
                FROM {grade_grades} gg
                JOIN {grade_items} gi ON gi.id = gg.itemid
-              WHERE gi.courseid = :courseid AND gi.itemtype = 'mod'
+              WHERE gi.courseid = :sepecourse AND gi.itemtype = 'mod'
                     AND gg.finalgrade IS NOT NULL AND gg.userid $insql",
             $params
         );
@@ -153,7 +183,7 @@ final class usage_calculator {
             "SELECT COUNT(DISTINCT cm.id)
                FROM {course_modules_completion} cmc
                JOIN {course_modules} cm ON cm.id = cmc.coursemoduleid
-              WHERE cm.course = :courseid AND cmc.completionstate > 0 AND cmc.userid $insql",
+              WHERE cm.course = :sepecourse AND cmc.completionstate > 0 AND cmc.userid $insql",
             $params
         );
 
@@ -161,14 +191,14 @@ final class usage_calculator {
             "SELECT COUNT(qa.id)
                FROM {quiz_attempts} qa
                JOIN {quiz} q ON q.id = qa.quiz
-              WHERE q.course = :courseid AND qa.preview = 0 AND qa.userid $insql",
+              WHERE q.course = :sepecourse AND qa.preview = 0 AND qa.userid $insql",
             $params
         );
         $intentos += (int)$DB->get_field_sql(
             "SELECT COUNT(s.id)
                FROM {assign_submission} s
                JOIN {assign} a ON a.id = s.assignment
-              WHERE a.course = :courseid AND s.status = 'submitted' AND s.userid $insql",
+              WHERE a.course = :sepecourse AND s.status = 'submitted' AND s.userid $insql",
             $params
         );
 

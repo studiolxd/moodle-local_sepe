@@ -30,7 +30,7 @@ class acciones_page implements \renderable, \templatable {
      * @param \stdClass|null $centro centre registered by SEPE, null when not yet registered
      * @param \stdClass[] $acciones stored actions
      * @param \stdClass[] $logs latest log entries
-     * @param string[] $courses course id => fullname options for mapping
+     * @param string[] $courses course id => formatted fullname of the mapped courses
      * @param bool $canviewlogs whether the viewer may see the log section
      */
     public function __construct(
@@ -40,7 +40,7 @@ class acciones_page implements \renderable, \templatable {
         private readonly array $acciones,
         /** @var \stdClass[] Latest log entries. */
         private readonly array $logs,
-        /** @var array<int, string> Mappable courses. */
+        /** @var array<int, string> Names of the mapped courses. */
         private readonly array $courses,
         /** @var bool Whether logs are visible. */
         private readonly bool $canviewlogs,
@@ -53,13 +53,12 @@ class acciones_page implements \renderable, \templatable {
 
         $acciones = [];
         foreach ($this->acciones as $accion) {
+            // The course selector searches courses on demand; only the
+            // current mapping is rendered as an option.
             $options = [];
-            foreach ($this->courses as $courseid => $fullname) {
-                $options[] = [
-                    'id' => $courseid,
-                    'name' => $fullname,
-                    'selected' => (int)$accion->courseid === $courseid,
-                ];
+            $courseid = (int)$accion->courseid;
+            if ($courseid > 0 && isset($this->courses[$courseid])) {
+                $options[] = ['id' => $courseid, 'name' => $this->courses[$courseid], 'selected' => true];
             }
             $acciones[] = [
                 'id' => $accion->id,

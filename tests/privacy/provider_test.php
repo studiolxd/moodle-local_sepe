@@ -32,16 +32,17 @@ use core_privacy\local\request\writer;
 #[\PHPUnit\Framework\Attributes\CoversClass(provider::class)]
 final class provider_test extends \core_privacy\tests\provider_testcase {
     /**
-     * Creates an action with one tutor and one participant mapped to a user.
+     * Creates an action mapped to a course with a cached tracking XML.
      *
-     * @param int $userid user to map both records to
+     * @param int $courseid mapped course
+     * @param string $codigo CODIGO_ACCION
      * @return int action record id
      */
-    private function create_linked_data(int $userid): int {
+    private function create_cached_accion(int $courseid, string $codigo = '2026000001'): int {
         global $DB;
-        $accionid = $DB->insert_record('local_sepe_accion', (object)[
+        return $DB->insert_record('local_sepe_accion', (object)[
             'origen_accion' => '20',
-            'codigo_accion' => '2026000001',
+            'codigo_accion' => $codigo,
             'situacion' => '50',
             'origen_especialidad' => '20',
             'area_profesional' => 'SSCE',
@@ -54,102 +55,107 @@ final class provider_test extends \core_privacy\tests\provider_testcase {
             'numero_asistentes' => 60,
             'denominacion' => 'Docencia de la formación profesional para el empleo',
             'rawxml' => '<ACCION_FORMATIVA/>',
+            'courseid' => $courseid,
+            'trackingxml' => '<ACCION_FORMATIVA><PARTICIPANTES/></ACCION_FORMATIVA>',
+            'trackinggenerated' => time(),
             'timecreated' => time(),
             'timemodified' => time(),
         ]);
-        $DB->insert_record('local_sepe_tutor', (object)[
-            'accionid' => $accionid,
-            'tipo_documento' => 'D',
-            'num_documento' => '0012345678',
-            'letra_nif' => 'Z',
-            'acreditacion' => 'Licenciado',
-            'userid' => $userid,
-        ]);
-        $DB->insert_record('local_sepe_participante', (object)[
-            'accionid' => $accionid,
-            'tipo_documento' => 'D',
-            'num_documento' => '0087654321',
-            'letra_nif' => 'X',
-            'userid' => $userid,
-        ]);
-        return $accionid;
+    }
+
+    /**
+     * Creates a course with a cached action and an enrolled student.
+     *
+     * @return array{0: \stdClass, 1: int} the student and the action id
+     */
+    private function create_student_with_cached_accion(): array {
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $user = $generator->create_user();
+        $generator->enrol_user($user->id, $course->id, 'student');
+        return [$user, $this->create_cached_accion($course->id)];
     }
 
     public function test_get_metadata(): void {
         $collection = provider::get_metadata(new collection('local_sepe'));
-        $this->assertCount(4, $collection->get_collection());
+        $this->assertCount(5, $collection->get_collection());
     }
 
     public function test_get_contexts_for_userid(): void {
         $this->resetAfterTest();
-        $user = $this->getDataGenerator()->create_user();
-        $this->create_linked_data($user->id);
+        [$user] = $this->create_student_with_cached_accion();
+        $other = $this->getDataGenerator()->create_user();
 
         $contextlist = provider::get_contexts_for_userid($user->id);
         $this->assertCount(1, $contextlist);
         $this->assertSame(\context_system::instance()->id, $contextlist->current()->id);
+        $this->assertCount(0, provider::get_contexts_for_userid($other->id));
+    }
+
+    public function test_no_context_without_cached_tracking(): void {
+        global $DB;
+        $this->resetAfterTest();
+        [$user, $accionid] = $this->create_student_with_cached_accion();
+        $DB->set_field('local_sepe_accion', 'trackingxml', null, ['id' => $accionid]);
+        $DB->set_field('local_sepe_accion', 'trackinggenerated', null, ['id' => $accionid]);
+
+        $this->assertCount(0, provider::get_contexts_for_userid($user->id));
     }
 
     public function test_get_users_in_context(): void {
         $this->resetAfterTest();
-        $user = $this->getDataGenerator()->create_user();
-        $other = $this->getDataGenerator()->create_user();
-        $this->create_linked_data($user->id);
+        [$user] = $this->create_student_with_cached_accion();
+        $this->getDataGenerator()->create_user();
 
         $userlist = new userlist(\context_system::instance(), 'local_sepe');
         provider::get_users_in_context($userlist);
-        $this->assertEqualsCanonicalizing([$user->id], $userlist->get_userids());
-        $this->assertNotContains($other->id, $userlist->get_userids());
+        $this->assertEquals([$user->id], $userlist->get_userids());
     }
 
     public function test_export_user_data(): void {
         $this->resetAfterTest();
-        $user = $this->getDataGenerator()->create_user();
-        $this->create_linked_data($user->id);
+        [$user] = $this->create_student_with_cached_accion();
 
         $context = \context_system::instance();
-        $contextlist = new approved_contextlist($user, 'local_sepe', [$context->id]);
-        provider::export_user_data($contextlist);
-
+        provider::export_user_data(new approved_contextlist($user, 'local_sepe', [$context->id]));
         $writer = writer::with_context($context);
         $this->assertTrue($writer->has_any_data());
-        $tutores = $writer->get_data([get_string('pluginname', 'local_sepe'), 'tutores']);
-        $this->assertSame('0012345678', $tutores->records[0]['num_documento']);
+        $data = $writer->get_data([get_string('pluginname', 'local_sepe'), '20/2026000001']);
+        $this->assertSame('20/2026000001', $data->codigo_accion);
     }
 
-    public function test_delete_data_for_user_unlinks_records(): void {
+    public function test_delete_data_for_user_discards_affected_cache(): void {
         global $DB;
         $this->resetAfterTest();
-        $user = $this->getDataGenerator()->create_user();
-        $this->create_linked_data($user->id);
+        [$user, $accionid] = $this->create_student_with_cached_accion();
+        $othercourse = $this->getDataGenerator()->create_course();
+        $otherid = $this->create_cached_accion($othercourse->id, '2026000002');
 
         $context = \context_system::instance();
         provider::delete_data_for_user(new approved_contextlist($user, 'local_sepe', [$context->id]));
 
-        // Records survive (FPE legal retention) but the user link is gone.
-        $this->assertSame(1, $DB->count_records('local_sepe_tutor'));
-        $this->assertSame(0, $DB->count_records_select('local_sepe_tutor', 'userid IS NOT NULL'));
-        $this->assertSame(0, $DB->count_records_select('local_sepe_participante', 'userid IS NOT NULL'));
+        $this->assertNull($DB->get_field('local_sepe_accion', 'trackingxml', ['id' => $accionid]));
+        $this->assertNotNull($DB->get_field('local_sepe_accion', 'trackingxml', ['id' => $otherid]));
+        // The action itself is kept (FPE legal retention).
+        $this->assertSame(2, $DB->count_records('local_sepe_accion'));
     }
 
     public function test_delete_data_for_users(): void {
         global $DB;
         $this->resetAfterTest();
-        $user = $this->getDataGenerator()->create_user();
-        $this->create_linked_data($user->id);
+        [$user, $accionid] = $this->create_student_with_cached_accion();
 
         $userlist = new approved_userlist(\context_system::instance(), 'local_sepe', [$user->id]);
         provider::delete_data_for_users($userlist);
-        $this->assertSame(0, $DB->count_records_select('local_sepe_tutor', 'userid IS NOT NULL'));
+        $this->assertNull($DB->get_field('local_sepe_accion', 'trackinggenerated', ['id' => $accionid]));
     }
 
     public function test_delete_data_for_all_users_in_context(): void {
         global $DB;
         $this->resetAfterTest();
-        $user = $this->getDataGenerator()->create_user();
-        $this->create_linked_data($user->id);
+        $this->create_student_with_cached_accion();
 
         provider::delete_data_for_all_users_in_context(\context_system::instance());
-        $this->assertSame(0, $DB->count_records_select('local_sepe_participante', 'userid IS NOT NULL'));
+        $this->assertSame(0, $DB->count_records_select('local_sepe_accion', 'trackinggenerated IS NOT NULL'));
     }
 }

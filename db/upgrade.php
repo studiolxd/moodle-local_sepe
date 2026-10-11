@@ -29,5 +29,34 @@
  * @return bool always true
  */
 function xmldb_local_sepe_upgrade($oldversion): bool {
+    global $DB;
+    $dbman = $DB->get_manager();
+
+    if ($oldversion < 2026101100) {
+        // Cache of the generated tracking XML, served to obtenerAccion.
+        $table = new xmldb_table('local_sepe_accion');
+        $field = new xmldb_field('trackingxml', XMLDB_TYPE_TEXT, null, null, null, null, null, 'courseid');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('trackinggenerated', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'trackingxml');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // The userid mapping of tutors and participants was never populated.
+        foreach (['local_sepe_tutor', 'local_sepe_participante'] as $tablename) {
+            $table = new xmldb_table($tablename);
+            $key = new xmldb_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+            $dbman->drop_key($table, $key);
+            $field = new xmldb_field('userid');
+            if ($dbman->field_exists($table, $field)) {
+                $dbman->drop_field($table, $field);
+            }
+        }
+
+        upgrade_plugin_savepoint(true, 2026101100, 'local', 'sepe');
+    }
+
     return true;
 }

@@ -60,6 +60,25 @@ final class wsse {
     }
 
     /**
+     * Masks the WS-Security password of a raw request before it is logged.
+     *
+     * Works on the raw text so it also covers requests that are not
+     * well-formed XML.
+     *
+     * @param string $rawxml raw request body
+     * @return string the request with the content of every Password element replaced
+     */
+    public static function redact(string $rawxml): string {
+        $redacted = preg_replace(
+            '#(<(?:[A-Za-z_][\w.-]*:)?Password\b[^>]*(?<!/)>).*?(</(?:[A-Za-z_][\w.-]*:)?Password\s*>)#s',
+            '$1***$2',
+            $rawxml
+        );
+        // On a PCRE failure, never fall back to the unredacted request.
+        return $redacted ?? '[request not logged: password redaction failed]';
+    }
+
+    /**
      * Extracts the UsernameToken from the SOAP header, if present.
      *
      * @param \DOMDocument $doc parsed request envelope

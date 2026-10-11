@@ -16,7 +16,7 @@ TeleformacionWebRED).
 
 ## Requisitos
 
-- Moodle 5.2 (probado con 5.2.1). Sin retrocompatibilidad con versiones anteriores.
+- Moodle 5.2 o 5.3 (probado con 5.2.4 y 5.3.0). Sin retrocompatibilidad con versiones anteriores.
 - PHP 8.3+ con las extensiones dom y libxml (incluidas por defecto).
 - Endpoint accesible por HTTPS con certificado válido (exigido por el SEPE en
   producción).
@@ -41,7 +41,12 @@ TeleformacionWebRED).
      **Importante**: deben coincidir exactamente con los datos declarados ante
      el SEPE — la autovalidación compara la respuesta con lo declarado.
    - **Campo de usuario con el NIF**: campo del perfil que contiene el
-     NIF/NIE del alumnado (`idnumber` o `profile_<nombrecorto>`).
+     NIF/NIE del alumnado (`idnumber`, otra columna de la tabla de usuarios
+     o `profile_<nombrecorto>`).
+   - La página *Acciones formativas SEPE* está disponible para quien tenga la
+     capacidad `local/sepe:manage` (por defecto, el rol gestor), aunque no
+     sea administrador del sitio. Los ajustes siguen requiriendo
+     `moodle/site:config`.
 3. La URL del endpoint es `https://<tu-moodle>/local/sepe/endpoint.php`
    (el WSDL se sirve en `...endpoint.php?wsdl`).
 
@@ -60,11 +65,16 @@ Las acciones formativas recibidas del SEPE se persisten literalmente
   el kit de autoevaluación).
 - **Acciones vinculadas a un curso Moodle** (página *Acciones formativas
   SEPE*): XML regenerado con datos reales del curso —
-  - `PARTICIPANTES` desde las matriculaciones (rol estudiante), con
+  - `PARTICIPANTES` desde las matriculaciones: usuarios matriculados en el
+    curso (también con matrícula suspendida o vencida, que se informan como
+    baja) con alguno de los *roles calificados* del sitio
+    (`$CFG->gradebookroles`, por defecto estudiante) en el contexto del curso,
     `FECHA_ALTA`/`FECHA_BAJA` de la matrícula y el documento de identidad del
     campo configurado (los usuarios sin NIF/NIE válido se omiten y se anotan
     en el log de depuración);
-  - `USO` desde el log estándar: sesiones con corte de inactividad de 1 hora
+  - `USO` desde el log estándar (logstore_standard debe estar activo), solo
+    con la actividad entre `FECHA_INICIO` y `FECHA_FIN` de la acción:
+    sesiones con corte de inactividad de 1 hora
     (criterio de block_dedication), asignadas a la franja del modelo de datos
     en la que comienzan (mañana 7-15h, tarde 15-23h, noche 23-7h), duración en
     horas enteras con el redondeo del modelo (≤0,5 abajo, >0,5 arriba);
@@ -77,9 +87,14 @@ Las acciones formativas recibidas del SEPE se persisten literalmente
   - `INDICADOR_COMPETENCIAS_CLAVE` se informa como `01` (cumple requisitos de
     acceso).
 
-La tarea programada *Actualizar datos de seguimiento SEPE* regenera a diario
-los datos de las acciones vinculadas (el SEPE exige una antigüedad máxima de
-7 días).
+El XML generado se guarda en caché (`local_sepe_accion.trackingxml`):
+`obtenerAccion` sirve la copia si tiene menos de 24 horas y la regenera si no.
+La tarea programada *Actualizar datos de seguimiento SEPE* la regenera a
+diario para todas las acciones vinculadas, de modo que las peticiones del
+SEPE no tienen que calcularla. Si una regeneración falla, se sigue sirviendo
+la última copia mientras tenga menos de 7 días (la antigüedad máxima que
+admite el SEPE). Al cambiar la vinculación de una acción, o al borrar el
+curso vinculado (la acción queda desvinculada), la caché se descarta.
 
 ## Validación con el kit oficial del SEPE
 
@@ -118,16 +133,27 @@ nombre — que impide validar incluso el XML de prueba del propio SEPE. La
 copia embebida en `xsd/` corrige ese espacio y se usa en los tests para
 validar el XML generado.
 
+## Seguridad del log de peticiones
+
+El log de peticiones nunca guarda la contraseña WS-Security: el contenido de
+`Password` se sustituye por `***` antes de registrar la petición. De las
+peticiones no autenticadas solo se guardan los primeros 4 KB, y las peticiones
+de más de 5 MB se rechazan con un SOAP Fault sin llegar a procesarse.
+
 ## Privacidad (GDPR)
 
 El plugin almacena documentos de identidad de tutores y participantes
 recibidos del SEPE, y las peticiones/respuestas SOAP en un log con retención
 configurable. Estos datos se conservan por obligación legal (seguimiento FPE,
 Orden TMS/369/2019; el órgano de seguimiento puede consultarlos hasta 90 días
-después de finalizar la acción). El proveedor de privacidad exporta y
-desvincula los registros asociados a usuarios de Moodle; los datos de
-terceros no vinculados quedan fuera del ciclo GDPR por usuario en virtud de
-dicha obligación.
+después de finalizar la acción) y no se vinculan a cuentas de Moodle.
+
+Los datos del alumnado de Moodle (documento de identidad, fechas de
+matrícula, resultados y uso del curso) se envían al SEPE y se guardan en la
+caché del XML de seguimiento. El proveedor de privacidad declara ese envío
+como ubicación externa; la exportación lista las acciones en cuyo informe
+aparece el usuario, y el borrado descarta la caché de esas acciones (se
+volverá a generar desde el curso, como exige la normativa FPE).
 
 ## Licencia
 

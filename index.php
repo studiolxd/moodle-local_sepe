@@ -28,57 +28,72 @@ require_once($CFG->libdir . '/adminlib.php');
 admin_externalpage_setup('local_sepe_manage');
 
 $context = context_system::instance();
-require_capability('local/sepe:manage', $context);
+$pageurl = new moodle_url('/local/sepe/index.php');
 
 $acciones = new \local_sepe\local\accion_repository();
 $centros = new \local_sepe\local\centro_repository();
 $logs = new \local_sepe\local\log_repository();
 
 $action = optional_param('action', '', PARAM_ALPHA);
-if ($action !== '' && confirm_sesskey()) {
+if ($action !== '') {
+    require_sesskey();
+
     if ($action === 'map') {
-        $accionid = required_param('accionid', PARAM_INT);
-        $courseid = required_param('courseid', PARAM_INT);
-        if ($courseid > 0 && !$DB->record_exists('course', ['id' => $courseid])) {
+        $accion = $acciones->get_by_id(required_param('accionid', PARAM_INT));
+        // An empty autocomplete selection submits no value: unmap.
+        $courseid = optional_param('courseid', 0, PARAM_INT);
+        if ($courseid > 0 && ($courseid === (int)SITEID || !$DB->record_exists('course', ['id' => $courseid]))) {
             throw new moodle_exception('errornocourse', 'local_sepe');
         }
-        $acciones->set_course($accionid, $courseid > 0 ? $courseid : null);
-        redirect(
-            new moodle_url('/local/sepe/index.php'),
-            get_string('mapsaved', 'local_sepe'),
-            null,
-            \core\output\notification::NOTIFY_SUCCESS
-        );
+        $acciones->set_course($accion->id, $courseid > 0 ? $courseid : null);
+        \local_sepe\event\accion_mapped::create([
+            'context' => $context,
+            'objectid' => $accion->id,
+            'other' => [
+                'origen_accion' => $accion->origen_accion,
+                'codigo_accion' => $accion->codigo_accion,
+                'courseid' => $courseid > 0 ? $courseid : null,
+            ],
+        ])->trigger();
+        redirect($pageurl, get_string('mapsaved', 'local_sepe'), null, \core\output\notification::NOTIFY_SUCCESS);
     }
+
     if ($action === 'reset') {
-        $acciones->delete_all();
-        $centros->reset();
-        redirect(
-            new moodle_url('/local/sepe/index.php'),
-            get_string('resetdone', 'local_sepe'),
-            null,
-            \core\output\notification::NOTIFY_SUCCESS
-        );
+        (new \local_sepe\local\reset_service())->reset();
+        redirect($pageurl, get_string('resetdone', 'local_sepe'), null, \core\output\notification::NOTIFY_SUCCESS);
     }
 }
 
 $canviewlogs = has_capability('local/sepe:viewlogs', $context);
 
-$courseoptions = [];
-foreach (get_courses('all', 'c.sortorder ASC', 'c.id, c.fullname') as $course) {
-    if ((int)$course->id === SITEID) {
-        continue;
-    }
-    $courseoptions[(int)$course->id] = format_string($course->fullname);
+$list = $acciones->list_all();
+
+// Only the mapped courses are loaded; the selector searches the rest on demand.
+$mappedcourses = [];
+$mappedids = array_unique(array_filter(array_map(static fn($a) => (int)$a->courseid, $list)));
+if ($mappedids) {
+    $mappedcourses = $DB->get_records_list('course', 'id', $mappedids, '', 'id, fullname');
 }
 
 $page = new \local_sepe\output\acciones_page(
     $centros->get(),
-    $acciones->list_all(),
+    $list,
     $canviewlogs ? $logs->latest(20) : [],
-    $courseoptions,
+    array_map(static fn($c) => format_string($c->fullname, true, ['context' => $context]), $mappedcourses),
     $canviewlogs
 );
+
+foreach ($list as $accion) {
+    $PAGE->requires->js_call_amd('core/form-autocomplete', 'enhance', [
+        '#local-sepe-course-' . $accion->id,
+        false,
+        'core/form-course-selector',
+        get_string('searchcourses'),
+        false,
+        true,
+        get_string('notmapped', 'local_sepe'),
+    ]);
+}
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('managepage', 'local_sepe'));

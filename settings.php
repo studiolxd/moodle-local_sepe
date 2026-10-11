@@ -24,11 +24,14 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-if ($hassiteconfig) {
-    $ADMIN->add('localplugins', new admin_category('local_sepe_category', get_string('pluginname', 'local_sepe')));
+// The category and the management page are registered for everyone: the
+// admin tree only shows them to users holding local/sepe:manage. The
+// settings page itself requires moodle/site:config.
+$ADMIN->add('localplugins', new admin_category('local_sepe_category', get_string('pluginname', 'local_sepe')));
 
-    $settings = new admin_settingpage('local_sepe_settings', get_string('settingspage', 'local_sepe'));
+$settings = new admin_settingpage('local_sepe_settings', get_string('settingspage', 'local_sepe'));
 
+if ($ADMIN->fulltree) {
     $endpointurl = new moodle_url('/local/sepe/endpoint.php');
     $settings->add(new admin_setting_heading(
         'local_sepe/serviceheading',
@@ -119,13 +122,13 @@ if ($hassiteconfig) {
         get_string('centroemail_desc', 'local_sepe'),
         ''
     ));
-
-    $ADMIN->add('local_sepe_category', $settings);
-
-    $ADMIN->add('local_sepe_category', new admin_externalpage(
-        'local_sepe_manage',
-        get_string('managepage', 'local_sepe'),
-        new moodle_url('/local/sepe/index.php'),
-        'local/sepe:manage'
-    ));
 }
+
+$ADMIN->add('local_sepe_category', $settings);
+
+$ADMIN->add('local_sepe_category', new admin_externalpage(
+    'local_sepe_manage',
+    get_string('managepage', 'local_sepe'),
+    new moodle_url('/local/sepe/index.php'),
+    'local/sepe:manage'
+));

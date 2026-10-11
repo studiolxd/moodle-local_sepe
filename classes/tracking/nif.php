@@ -59,24 +59,46 @@ final class nif {
     }
 
     /**
-     * Reads the configured NIF field of a user.
+     * Reads the configured NIF field of a set of users in a single query.
      *
      * The plugin setting 'niffield' selects either the standard idnumber
-     * field or a custom profile field ('profile_<shortname>').
+     * field, another column of the user table, or a custom profile field
+     * ('profile_<shortname>').
      *
-     * @param \stdClass $user user record
-     * @return string raw field value, '' when unset
+     * @param string $usersql SQL returning an "id" column with the user ids
+     * @param array $params named params of $usersql
+     * @return array<int, string> raw field value keyed by user id; users
+     *     without a value may be missing
      */
-    public static function raw_value(\stdClass $user): string {
+    public static function raw_values(string $usersql, array $params): array {
+        global $DB;
+
         $field = trim((string)get_config('local_sepe', 'niffield'));
-        if ($field === '' || $field === 'idnumber') {
-            return (string)($user->idnumber ?? '');
+        if ($field === '') {
+            $field = 'idnumber';
         }
+
         if (str_starts_with($field, 'profile_')) {
-            $shortname = substr($field, strlen('profile_'));
-            $fields = profile_user_record($user->id, false);
-            return (string)($fields->{$shortname} ?? '');
+            $params['sepeniffield'] = substr($field, strlen('profile_'));
+            return $DB->get_records_sql_menu(
+                "SELECT d.userid, d.data
+                   FROM {user_info_data} d
+                   JOIN {user_info_field} f ON f.id = d.fieldid
+                  WHERE f.shortname = :sepeniffield AND d.userid IN ($usersql)",
+                $params
+            );
         }
-        return (string)($user->{$field} ?? '');
+
+        // The column name goes into the SQL: only accept real user columns.
+        if (!array_key_exists($field, $DB->get_columns('user'))) {
+            debugging("local_sepe: the NIF user field '{$field}' does not exist", DEBUG_DEVELOPER);
+            return [];
+        }
+        return $DB->get_records_sql_menu(
+            "SELECT u.id, u.{$field}
+               FROM {user} u
+              WHERE u.id IN ($usersql)",
+            $params
+        );
     }
 }

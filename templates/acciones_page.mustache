@@ -23,7 +23,9 @@
     Context variables required for this template:
     * centro - object|null, registered centre (codigo, nombre, urlseguimiento)
     * hasacciones - bool, whether any action was received
-    * acciones - array of actions (id, codigo, denominacion, situacion, especialidad, fechas, mapped, options)
+    * acciones - array of actions (id, codigo, denominacion, situacion, especialidad, fechas, mapped, options);
+      options holds only the currently mapped course, the select is enhanced
+      into an AJAX course search by core/form-autocomplete
     * canviewlogs - bool, whether the log section is shown
     * haslogs - bool, whether any request was logged
     * logs - array of log rows (time, operation, ip, returncode, errormsg)
@@ -42,8 +44,8 @@
                 "situacion": "50",
                 "especialidad": "SSCE0110",
                 "fechas": "01/09/2026 — 20/12/2026",
-                "mapped": false,
-                "options": [ { "id": 2, "name": "Curso demo", "selected": false } ]
+                "mapped": true,
+                "options": [ { "id": 2, "name": "Curso demo", "selected": true } ]
             }
         ],
         "canviewlogs": true,
@@ -96,8 +98,8 @@
                     <input type="hidden" name="action" value="map">
                     <input type="hidden" name="accionid" value="{{id}}">
                     <label class="visually-hidden" for="local-sepe-course-{{id}}">{{#str}} colcourse, local_sepe {{/str}}</label>
-                    <select class="form-select form-select-sm" name="courseid" id="local-sepe-course-{{id}}">
-                        <option value="0">{{#str}} notmapped, local_sepe {{/str}}</option>
+                    <select class="form-select form-select-sm" name="courseid" id="local-sepe-course-{{id}}"
+                        data-requiredcapabilities="" data-exclude="" data-limittoenrolled="0">
                         {{#options}}
                         <option value="{{id}}" {{#selected}}selected{{/selected}}>{{name}}</option>
                         {{/options}}

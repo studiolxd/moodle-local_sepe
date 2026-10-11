@@ -28,13 +28,71 @@ namespace local_sepe\tracking;
  * configured user field and their results from course completion and the
  * course grade.
  *
+ * Participants are the users enrolled in the course (active or not) who
+ * hold one of the site "graded roles" ($CFG->gradebookroles) in the
+ * course context. Every query receives them as a subquery rather than an
+ * IN list, so the cost does not grow with one query per participant and
+ * large courses stay below the parameter limits of the database.
+ *
+ * The generated XML is cached in local_sepe_accion (see tracking_xml()):
+ * obtenerAccion serves it while it is younger than CACHE_TTL, and the
+ * refresh_tracking_data task regenerates it daily.
+ *
  * @package    local_sepe
  * @copyright  2026 Studio LXD <hello@studiolxd.com>
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class generator {
+    /** @var int Age after which the cached tracking XML is regenerated, in seconds. */
+    public const CACHE_TTL = DAYSECS;
+
+    /** @var int Maximum age SEPE accepts for tracking data; older cache is never served. */
+    public const MAX_STALE = 7 * DAYSECS;
+
     /**
-     * Builds the tracking XML of a mapped action.
+     * Tracking XML of a mapped action, served from the cache when fresh.
+     *
+     * @param \stdClass $accion local_sepe_accion record with a non-null courseid
+     * @return string|null ACCION_FORMATIVA XML fragment, or null when there is
+     *     no usable data (callers fall back to rawxml)
+     */
+    public static function tracking_xml(\stdClass $accion): ?string {
+        $cached = $accion->trackingxml ?? null;
+        if ($cached !== null && time() - (int)$accion->trackinggenerated < self::CACHE_TTL) {
+            return $cached;
+        }
+        return self::refresh($accion);
+    }
+
+    /**
+     * Regenerates and caches the tracking XML of a mapped action.
+     *
+     * When regeneration fails, the last cached XML is still served while
+     * it is within the 7-day freshness SEPE requires.
+     *
+     * @param \stdClass $accion local_sepe_accion record with a non-null courseid
+     * @return string|null ACCION_FORMATIVA XML fragment, or null when there is
+     *     no usable data (callers fall back to rawxml)
+     */
+    public static function refresh(\stdClass $accion): ?string {
+        $now = time();
+        $cached = $accion->trackingxml ?? null;
+        $age = $cached !== null ? $now - (int)$accion->trackinggenerated : null;
+
+        $xml = self::for_accion($accion);
+        if ($xml !== null) {
+            (new \local_sepe\local\accion_repository())->store_tracking((int)$accion->id, $xml, $now);
+            return $xml;
+        }
+
+        if ($cached !== null && $age < self::MAX_STALE) {
+            return $cached;
+        }
+        return null;
+    }
+
+    /**
+     * Builds the tracking XML of a mapped action, bypassing the cache.
      *
      * @param \stdClass $accion local_sepe_accion record with a non-null courseid
      * @return string|null ACCION_FORMATIVA XML fragment, or null when the
@@ -57,25 +115,25 @@ final class generator {
      * @return string XML fragment
      */
     private function build(\stdClass $accion): string {
-        global $CFG;
+        global $CFG, $DB;
         require_once($CFG->libdir . '/gradelib.php');
-        require_once($CFG->dirroot . '/user/profile/lib.php');
 
         $course = get_course($accion->courseid);
         $context = \context_course::instance($course->id);
-        $students = $this->students($context);
-        $userids = array_keys($students);
+        [$usersql, $userparams] = $this->students_sql($context);
+        $userids = array_map('intval', $DB->get_fieldset_sql("$usersql ORDER BY id ASC", $userparams));
 
         $doc = new \DOMDocument('1.0', 'UTF-8');
         $doc->loadXML($accion->rawxml, LIBXML_NONET);
         $root = $doc->documentElement;
 
-        $calculator = new usage_calculator($course->id, $userids);
+        [$from, $to] = $this->period($accion);
+        $calculator = new usage_calculator($course->id, $usersql, $userparams, $from, $to);
         $uso = $calculator->uso();
         $seguimiento = $calculator->seguimiento_evaluacion();
 
         // Refresh the USO block of every speciality with the course figures.
-        foreach ($this->find($root, 'ESPECIALIDADES_ACCION') as $especialidades) {
+        foreach ($this->children($root, 'ESPECIALIDADES_ACCION') as $especialidades) {
             foreach ($this->children($especialidades, 'ESPECIALIDAD') as $especialidad) {
                 foreach ($this->children($especialidad, 'USO') as $old) {
                     $especialidad->replaceChild($this->build_uso($doc, $uso, $seguimiento), $old);
@@ -84,7 +142,7 @@ final class generator {
         }
 
         // Replace PARTICIPANTES with the live course enrolments.
-        $participantes = $this->build_participantes($doc, $accion, $course, $students);
+        $participantes = $this->build_participantes($doc, $accion, $course, $userids, $usersql, $userparams);
         foreach ($this->children($root, 'PARTICIPANTES') as $old) {
             $root->replaceChild($participantes, $old);
             $participantes = null;
@@ -98,18 +156,53 @@ final class generator {
     }
 
     /**
-     * Enrolled users holding a student-archetype role in the course.
+     * SQL selecting the ids of the participants of a course.
+     *
+     * Participants are users enrolled in the course (including suspended
+     * or expired enrolments, which are reported as drop-outs) holding one
+     * of the site graded roles in the course context.
      *
      * @param \context_course $context course context
-     * @return array<int, \stdClass> user records keyed by id
+     * @return array{0: string, 1: array} SQL returning an "id" column, and its named params
      */
-    private function students(\context_course $context): array {
-        $studentroles = array_keys(get_archetype_roles('student'));
-        if ($studentroles === []) {
-            return [];
+    private function students_sql(\context_course $context): array {
+        global $CFG, $DB;
+
+        $roleids = array_filter(array_map('intval', explode(',', (string)($CFG->gradebookroles ?? ''))));
+        if ($roleids === []) {
+            return ['SELECT id FROM {user} WHERE 1 = 0', []];
         }
-        $users = get_role_users($studentroles, $context, false, 'u.*', 'u.id ASC');
-        return $users;
+        [$enrolledsql, $params] = get_enrolled_sql($context, '', 0, false);
+        [$rolesql, $roleparams] = $DB->get_in_or_equal($roleids, SQL_PARAMS_NAMED, 'sepegradedrole');
+        $params += $roleparams;
+        $params['sepestudentctx'] = $context->id;
+
+        $sql = "SELECT id
+                  FROM ($enrolledsql) sepeenrolled
+                 WHERE EXISTS (
+                           SELECT 1
+                             FROM {role_assignments} ra
+                            WHERE ra.userid = sepeenrolled.id
+                                  AND ra.contextid = :sepestudentctx
+                                  AND ra.roleid $rolesql
+                       )";
+        return [$sql, $params];
+    }
+
+    /**
+     * Period of the action as timestamps, from FECHA_INICIO 00:00 to FECHA_FIN 23:59:59.
+     *
+     * @param \stdClass $accion local_sepe_accion record
+     * @return array{0: int|null, 1: int|null} start and end, null when a date cannot be parsed
+     */
+    private function period(\stdClass $accion): array {
+        $tz = \core_date::get_server_timezone_object();
+        $start = \DateTime::createFromFormat('!d/m/Y', (string)$accion->fecha_inicio, $tz);
+        $end = \DateTime::createFromFormat('!d/m/Y', (string)$accion->fecha_fin, $tz);
+        return [
+            $start !== false ? $start->getTimestamp() : null,
+            $end !== false ? $end->getTimestamp() + DAYSECS - 1 : null,
+        ];
     }
 
     /**
@@ -152,20 +245,36 @@ final class generator {
      * @param \DOMDocument $doc owner document
      * @param \stdClass $accion local_sepe_accion record
      * @param \stdClass $course course record
-     * @param \stdClass[] $students student records keyed by id
+     * @param int[] $userids participant ids, in report order
+     * @param string $usersql SQL returning the participant ids
+     * @param array $userparams named params of $usersql
      * @return \DOMElement PARTICIPANTES element
      */
-    private function build_participantes(\DOMDocument $doc, \stdClass $accion, \stdClass $course, array $students): \DOMElement {
+    private function build_participantes(
+        \DOMDocument $doc,
+        \stdClass $accion,
+        \stdClass $course,
+        array $userids,
+        string $usersql,
+        array $userparams
+    ): \DOMElement {
         $el = $doc->createElement('PARTICIPANTES');
-        $especialidades = $this->accion_especialidades($doc);
-        $enrolments = $this->enrolment_periods($course->id, array_keys($students));
-        $courseitem = \grade_item::fetch_course_item($course->id);
+        if ($userids === []) {
+            return $el;
+        }
 
-        foreach ($students as $student) {
-            $id = nif::parse(nif::raw_value($student));
+        $especialidades = $this->accion_especialidades($doc);
+        $nifs = nif::raw_values($usersql, $userparams);
+        $enrolments = $this->enrolment_periods($course->id, $usersql, $userparams);
+        $courseitem = \grade_item::fetch_course_item($course->id);
+        $grades = $this->final_grades($courseitem, $usersql, $userparams);
+        $completions = $this->completions($course->id, $usersql, $userparams);
+
+        foreach ($userids as $userid) {
+            $id = nif::parse($nifs[$userid] ?? '');
             if ($id === null) {
                 debugging(
-                    "local_sepe: student {$student->id} has no valid NIF/NIE, skipped from SEPE tracking",
+                    "local_sepe: student {$userid} has no valid NIF/NIE, skipped from SEPE tracking",
                     DEBUG_DEVELOPER
                 );
                 continue;
@@ -184,8 +293,14 @@ final class generator {
             $participante->appendChild($doc->createElement('CONTRATO_FORMACION'));
 
             $espsel = $doc->createElement('ESPECIALIDADES_PARTICIPANTE');
-            $enrolment = $enrolments[$student->id] ?? null;
-            $resultados = $this->resultados($accion, $student->id, $courseitem, $enrolment);
+            $enrolment = $enrolments[$userid] ?? null;
+            $resultados = $this->resultados(
+                $accion,
+                $courseitem,
+                $grades[$userid] ?? null,
+                isset($completions[$userid]),
+                $enrolment
+            );
             foreach ($especialidades as $especialidad) {
                 $espsel->appendChild(
                     $this->build_especialidad_participante($doc, $especialidad, $enrolment, $resultados)
@@ -254,27 +369,23 @@ final class generator {
      * reported on the 5-10 scale multiplied by 100, as the model requires.
      *
      * @param \stdClass $accion local_sepe_accion record
-     * @param int $userid participant user id
      * @param \grade_item|false $courseitem course grade item
+     * @param string|null $finalgrade course final grade of the participant, null if ungraded
+     * @param bool $completed whether the participant completed the course
      * @param \stdClass|null $enrolment enrolment period of the participant
      * @return array{resultado: string, calificacion: int|null, puntuacion: int|null}
      */
-    private function resultados(\stdClass $accion, int $userid, $courseitem, ?\stdClass $enrolment): array {
-        global $DB;
-
+    private function resultados(
+        \stdClass $accion,
+        $courseitem,
+        ?string $finalgrade,
+        bool $completed,
+        ?\stdClass $enrolment
+    ): array {
         $grade10 = null;
-        if ($courseitem) {
-            $grade = new \grade_grade(['itemid' => $courseitem->id, 'userid' => $userid]);
-            if ($grade->finalgrade !== null && (float)$courseitem->grademax > 0) {
-                $grade10 = (float)$grade->finalgrade / (float)$courseitem->grademax * 10;
-            }
+        if ($courseitem && $finalgrade !== null && (float)$courseitem->grademax > 0) {
+            $grade10 = (float)$finalgrade / (float)$courseitem->grademax * 10;
         }
-
-        $completed = $DB->get_field(
-            'course_completions',
-            'timecompleted',
-            ['course' => $accion->courseid, 'userid' => $userid]
-        );
 
         if ($completed) {
             $resultado = ($grade10 !== null && $grade10 < 5) ? '4' : '3';
@@ -314,7 +425,7 @@ final class generator {
     private function accion_especialidades(\DOMDocument $doc): array {
         $result = [];
         $root = $doc->documentElement;
-        foreach ($this->find($root, 'ESPECIALIDADES_ACCION') as $container) {
+        foreach ($this->children($root, 'ESPECIALIDADES_ACCION') as $container) {
             foreach ($this->children($container, 'ESPECIALIDAD') as $especialidad) {
                 foreach ($this->children($especialidad, 'ID_ESPECIALIDAD') as $id) {
                     $result[] = $this->triplet($id);
@@ -356,24 +467,21 @@ final class generator {
      * and, when every method has an end date, the latest end.
      *
      * @param int $courseid course id
-     * @param int[] $userids participant user ids
+     * @param string $usersql SQL returning the participant ids
+     * @param array $userparams named params of $usersql
      * @return array<int, \stdClass> objects with timestart, timeend and status, keyed by user id
      */
-    private function enrolment_periods(int $courseid, array $userids): array {
+    private function enrolment_periods(int $courseid, string $usersql, array $userparams): array {
         global $DB;
 
-        if ($userids === []) {
-            return [];
-        }
-        [$insql, $params] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
-        $params['courseid'] = $courseid;
+        $params = $userparams + ['sepeenrolcourse' => $courseid];
 
         $rows = $DB->get_records_sql(
             "SELECT ue.userid, MIN(ue.timestart) AS timestart, MAX(ue.timeend) AS timeend,
                     MIN(ue.status) AS status, MIN(ue.timecreated) AS timecreated
                FROM {user_enrolments} ue
                JOIN {enrol} e ON e.id = ue.enrolid
-              WHERE e.courseid = :courseid AND ue.userid $insql
+              WHERE e.courseid = :sepeenrolcourse AND ue.userid IN ($usersql)
            GROUP BY ue.userid",
             $params
         );
@@ -384,6 +492,45 @@ final class generator {
             }
         }
         return $rows;
+    }
+
+    /**
+     * Course final grades of the participants.
+     *
+     * @param \grade_item|false $courseitem course grade item
+     * @param string $usersql SQL returning the participant ids
+     * @param array $userparams named params of $usersql
+     * @return array<int, string|null> final grade keyed by user id
+     */
+    private function final_grades($courseitem, string $usersql, array $userparams): array {
+        global $DB;
+        if (!$courseitem) {
+            return [];
+        }
+        return $DB->get_records_sql_menu(
+            "SELECT userid, finalgrade
+               FROM {grade_grades}
+              WHERE itemid = :sepegradeitem AND userid IN ($usersql)",
+            $userparams + ['sepegradeitem' => $courseitem->id]
+        );
+    }
+
+    /**
+     * Participants who completed the course.
+     *
+     * @param int $courseid course id
+     * @param string $usersql SQL returning the participant ids
+     * @param array $userparams named params of $usersql
+     * @return array<int, string> completion time keyed by user id
+     */
+    private function completions(int $courseid, string $usersql, array $userparams): array {
+        global $DB;
+        return $DB->get_records_sql_menu(
+            "SELECT userid, timecompleted
+               FROM {course_completions}
+              WHERE course = :sepecompletioncourse AND timecompleted > 0 AND userid IN ($usersql)",
+            $userparams + ['sepecompletioncourse' => $courseid]
+        );
     }
 
     /**
@@ -437,16 +584,5 @@ final class generator {
             }
         }
         return $result;
-    }
-
-    /**
-     * Alias of children() used where the intent is a lookup.
-     *
-     * @param \DOMElement $parent parent element
-     * @param string $name local name to match
-     * @return \DOMElement[]
-     */
-    private function find(\DOMElement $parent, string $name): array {
-        return $this->children($parent, $name);
     }
 }

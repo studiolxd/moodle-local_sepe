@@ -19,9 +19,10 @@ namespace local_sepe\task;
 /**
  * Scheduled task that regenerates the tracking XML of mapped actions.
  *
- * SEPE requires tracking data to be at most 7 days old; running daily
- * keeps the generated XML warm and surfaces generation errors early
- * instead of at request time.
+ * SEPE requires tracking data to be at most 7 days old. The task
+ * regenerates and caches the XML of every mapped action daily, so
+ * obtenerAccion is served from the cache instead of computing it on
+ * request, and generation errors surface here first.
  *
  * @package    local_sepe
  * @copyright  2026 Studio LXD <hello@studiolxd.com>
@@ -37,16 +38,19 @@ class refresh_tracking_data extends \core\task\scheduled_task {
     public function execute() {
         global $DB;
 
-        $mapped = $DB->get_records_select('local_sepe_accion', 'courseid IS NOT NULL');
+        $mapped = $DB->get_recordset_select('local_sepe_accion', 'courseid IS NOT NULL', null, 'id ASC');
+        $count = 0;
         foreach ($mapped as $accion) {
-            $xml = \local_sepe\tracking\generator::for_accion($accion);
+            $count++;
+            $xml = \local_sepe\tracking\generator::refresh($accion);
             if ($xml === null) {
                 mtrace("local_sepe: could not generate tracking data for action {$accion->codigo_accion}.");
                 continue;
             }
             mtrace("local_sepe: refreshed tracking data for action {$accion->codigo_accion}.");
         }
-        if (!$mapped) {
+        $mapped->close();
+        if ($count === 0) {
             mtrace('local_sepe: no actions mapped to courses, nothing to refresh.');
         }
     }

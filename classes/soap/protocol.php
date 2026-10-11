@@ -58,6 +58,12 @@ final class protocol {
     /** @var string Fixed WS-Security username used by SEPE. */
     public const USERNAME = 'SEPE';
 
+    /** @var int Largest request body accepted, in bytes. Real crearAccion requests are well below 1 MB. */
+    public const MAX_REQUEST_BYTES = 5 * 1024 * 1024;
+
+    /** @var int Bytes of the request kept in the log when the request was not authenticated. */
+    public const UNAUTHENTICATED_LOG_BYTES = 4096;
+
     /** @var int Return code: operation completed successfully. */
     public const RET_OK = 0;
 
