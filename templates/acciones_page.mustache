@@ -93,12 +93,13 @@
             <td>{{especialidad}}</td>
             <td>{{fechas}}</td>
             <td>
-                <form method="post" action="{{actionurl}}" class="d-flex align-items-center gap-1">
+                <form method="post" action="{{actionurl}}" class="local-sepe-mapform d-flex align-items-center">
                     <input type="hidden" name="sesskey" value="{{sesskey}}">
                     <input type="hidden" name="action" value="map">
                     <input type="hidden" name="accionid" value="{{id}}">
-                    <label class="visually-hidden" for="local-sepe-course-{{id}}">{{#str}} colcourse, local_sepe {{/str}}</label>
-                    <select class="form-select form-select-sm" name="courseid" id="local-sepe-course-{{id}}"
+                    {{! Both class sets: Bootstrap 4 (Moodle 4.4-4.5) and Bootstrap 5 (Moodle 5.0+). }}
+                    <label class="sr-only visually-hidden" for="local-sepe-course-{{id}}">{{#str}} colcourse, local_sepe {{/str}}</label>
+                    <select class="custom-select custom-select-sm form-select form-select-sm" name="courseid" id="local-sepe-course-{{id}}"
                         data-requiredcapabilities="" data-exclude="" data-limittoenrolled="0">
                         {{#options}}
                         <option value="{{id}}" {{#selected}}selected{{/selected}}>{{name}}</option>

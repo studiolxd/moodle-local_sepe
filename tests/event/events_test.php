@@ -53,6 +53,7 @@ final class events_test extends \advanced_testcase {
      *
      * @param string $class event class
      * @param array $data event data without context
+     * @dataProvider events_provider
      */
     #[\PHPUnit\Framework\Attributes\DataProvider('events_provider')]
     public function test_event(string $class, array $data): void {
@@ -74,6 +75,7 @@ final class events_test extends \advanced_testcase {
      *
      * @param string $class event class
      * @param array $data event data without context
+     * @dataProvider events_provider
      */
     #[\PHPUnit\Framework\Attributes\DataProvider('events_provider')]
     public function test_event_requires_other(string $class, array $data): void {

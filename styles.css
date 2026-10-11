@@ -1,0 +1,4 @@
+/* Course mapping form of the admin page; gap works with Bootstrap 4 and 5. */
+.local-sepe-mapform {
+    gap: 0.25rem;
+}
