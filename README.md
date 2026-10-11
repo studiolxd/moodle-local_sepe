@@ -16,8 +16,9 @@ TeleformacionWebRED).
 
 ## Requisitos
 
-- Moodle 5.2 o 5.3 (probado con 5.2.4 y 5.3.0). Sin retrocompatibilidad con versiones anteriores.
-- PHP 8.3+ con las extensiones dom y libxml (incluidas por defecto).
+- Moodle 4.4 a 5.3. El CI prueba cada versión: 4.4, 4.5, 5.0, 5.1, 5.2 y 5.3.
+- PHP 8.1+ (el mínimo que exija tu versión de Moodle) con las extensiones dom
+  y libxml (incluidas por defecto).
 - Endpoint accesible por HTTPS con certificado válido (exigido por el SEPE en
   producción).
 - **El servidor web debe entregar a PHP los cuerpos de peticiones con
@@ -29,7 +30,7 @@ TeleformacionWebRED).
 
 ## Instalación y configuración
 
-1. Copia el plugin en `local/sepe` (en Moodle 5.x: `public/local/sepe`) y
+1. Copia el plugin en `local/sepe` (en Moodle 5.1+: `public/local/sepe`) y
    ejecuta la actualización (`php admin/cli/upgrade.php`).
 2. En *Administración del sitio → Extensiones → Servicio de seguimiento de
    teleformación del SEPE → Ajustes*:

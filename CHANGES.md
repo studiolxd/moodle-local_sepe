@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.0 (2026-10-11)
+
+Amplía el soporte a Moodle 4.4 y 4.5 (LTS), 5.0 y 5.1, además de 5.2 y 5.3.
+Sin cambios funcionales ni en la comunicación con el SEPE.
+
+- `$plugin->requires` pasa a Moodle 4.4 y `$plugin->supported` a `[404, 503]`.
+- La página de gestión funciona con Bootstrap 4 (Moodle 4.x) y Bootstrap 5
+  (Moodle 5.x): clases de los dos para la etiqueta oculta y el desplegable, y
+  `styles.css` para la separación del formulario de vinculación.
+- Los tests funcionan con PHPUnit 9 (Moodle 4.x) y PHPUnit 11 (Moodle 5.x):
+  llevan a la vez atributos y anotaciones (`@covers`, `@dataProvider`).
+- Matriz del CI ampliada a 4.4, 4.5, 5.0, 5.1, 5.2 y 5.3, con PHP 8.1 a 8.4,
+  PostgreSQL 17 y MariaDB 11.4: 49 tests en verde en las 8 combinaciones.
+
 ## 1.1.0 (2026-10-11)
 
 Compatibilidad con Moodle 5.3 y correcciones de una auditoría de seguridad,
