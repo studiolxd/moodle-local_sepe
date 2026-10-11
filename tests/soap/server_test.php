@@ -16,6 +16,9 @@
 
 namespace local_sepe\soap;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(server::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(request_parser::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(response_builder::class)]
 /**
  * End-to-end tests of the SOAP server.
  *
@@ -30,9 +33,6 @@ namespace local_sepe\soap;
  * @covers     \local_sepe\soap\request_parser
  * @covers     \local_sepe\soap\response_builder
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(server::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(request_parser::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(response_builder::class)]
 final class server_test extends \advanced_testcase {
     /** @var string Password configured for the service in these tests. */
     private const PASSWORD = 'kit-password';

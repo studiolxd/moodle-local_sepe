@@ -16,6 +16,8 @@
 
 namespace local_sepe\local;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(reset_service::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\local_sepe\event\data_reset::class)]
 /**
  * Tests for the validation data reset.
  *
@@ -25,8 +27,6 @@ namespace local_sepe\local;
  * @covers     \local_sepe\local\reset_service
  * @covers     \local_sepe\event\data_reset
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(reset_service::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(\local_sepe\event\data_reset::class)]
 final class reset_service_test extends \advanced_testcase {
     public function test_reset_deletes_everything_and_triggers_event(): void {
         global $DB;

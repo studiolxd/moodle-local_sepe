@@ -16,6 +16,7 @@
 
 namespace local_sepe\tracking;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(nif::class)]
 /**
  * Tests for the NIF/NIE parser.
  *
@@ -24,7 +25,6 @@ namespace local_sepe\tracking;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \local_sepe\tracking\nif
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(nif::class)]
 final class nif_test extends \basic_testcase {
     public function test_dni(): void {
         $this->assertSame(

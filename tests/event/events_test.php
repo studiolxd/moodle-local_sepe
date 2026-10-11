@@ -16,6 +16,11 @@
 
 namespace local_sepe\event;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(accion_created::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(accion_deleted::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(accion_mapped::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(centro_updated::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(data_reset::class)]
 /**
  * Tests for the events of local_sepe.
  *
@@ -28,11 +33,6 @@ namespace local_sepe\event;
  * @covers     \local_sepe\event\centro_updated
  * @covers     \local_sepe\event\data_reset
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(accion_created::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(accion_deleted::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(accion_mapped::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(centro_updated::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(data_reset::class)]
 final class events_test extends \advanced_testcase {
     /**
      * Events with valid data, keyed by class.
@@ -53,6 +53,7 @@ final class events_test extends \advanced_testcase {
         ];
     }
 
+    #[\PHPUnit\Framework\Attributes\DataProvider('events_provider')]
     /**
      * Events trigger, describe themselves and declare their restore mapping.
      *
@@ -60,7 +61,6 @@ final class events_test extends \advanced_testcase {
      * @param array $data event data without context
      * @dataProvider events_provider
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('events_provider')]
     public function test_event(string $class, array $data): void {
         $this->resetAfterTest();
         $sink = $this->redirectEvents();
@@ -75,6 +75,7 @@ final class events_test extends \advanced_testcase {
         $this->assertFalse($class::get_other_mapping());
     }
 
+    #[\PHPUnit\Framework\Attributes\DataProvider('events_provider')]
     /**
      * Events refuse to be created without their mandatory other data.
      *
@@ -82,7 +83,6 @@ final class events_test extends \advanced_testcase {
      * @param array $data event data without context
      * @dataProvider events_provider
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('events_provider')]
     public function test_event_requires_other(string $class, array $data): void {
         $this->expectException(\coding_exception::class);
         $class::create(['other' => []] + $data + ['context' => \context_system::instance()]);

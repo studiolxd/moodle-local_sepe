@@ -22,6 +22,7 @@ use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(provider::class)]
 /**
  * Tests for the privacy provider.
  *
@@ -30,7 +31,6 @@ use core_privacy\local\request\writer;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \local_sepe\privacy\provider
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(provider::class)]
 final class provider_test extends \core_privacy\tests\provider_testcase {
     /**
      * Creates an action mapped to a course with a cached tracking XML.

@@ -19,6 +19,8 @@ namespace local_sepe\tracking;
 use local_sepe\local\accion_repository;
 use local_sepe\soap\request_parser;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(generator::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(usage_calculator::class)]
 /**
  * Tests for the Moodle-backed tracking data generator.
  *
@@ -28,8 +30,6 @@ use local_sepe\soap\request_parser;
  * @covers     \local_sepe\tracking\generator
  * @covers     \local_sepe\tracking\usage_calculator
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(generator::class)]
-#[\PHPUnit\Framework\Attributes\CoversClass(usage_calculator::class)]
 final class generator_test extends \advanced_testcase {
     #[\Override]
     protected function setUp(): void {

@@ -16,6 +16,7 @@
 
 namespace local_sepe\soap;
 
+#[\PHPUnit\Framework\Attributes\CoversClass(wsse::class)]
 /**
  * Tests for the WS-Security UsernameToken authentication.
  *
@@ -24,7 +25,6 @@ namespace local_sepe\soap;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @covers     \local_sepe\soap\wsse
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(wsse::class)]
 final class wsse_test extends \advanced_testcase {
     /** @var string PasswordText type URI. */
     private const PASSWORDTEXT = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText';
