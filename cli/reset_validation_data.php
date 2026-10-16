@@ -30,7 +30,27 @@
 
 define('CLI_SCRIPT', true);
 
-require(__DIR__ . '/../../../config.php');
+// Load Moodle config. __DIR__ resolves symlinks, so the standard
+// '../../../config.php' breaks when this plugin dir is symlinked into
+// Moodle for development. Go up from the script path as it was invoked
+// (a relative one from the logical working directory, $PWD, which keeps
+// the symlinks); fall back to the relative path for non-symlinked installs.
+require((static function (): string {
+    $path = $_SERVER['SCRIPT_FILENAME'];
+    if ($path[0] !== '/' && getenv('PWD') && realpath(getenv('PWD')) === getcwd()) {
+        $path = getenv('PWD') . '/' . $path;
+    }
+    $dirs = [];
+    foreach (explode('/', $path) as $part) {
+        if ($part === '..') {
+            array_pop($dirs);
+        } else if ($part !== '.' && $part !== '') {
+            $dirs[] = $part;
+        }
+    }
+    $config = ($path[0] === '/' ? '/' : '') . implode('/', array_slice($dirs, 0, -4)) . '/config.php';
+    return is_file($config) ? $config : __DIR__ . '/../../../config.php';
+})());
 require_once($CFG->libdir . '/clilib.php');
 
 [$options, $unrecognized] = cli_get_params(

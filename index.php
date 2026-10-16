@@ -22,7 +22,17 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require(__DIR__ . '/../../config.php');
+// Load Moodle config. __DIR__ resolves symlinks, so the standard
+// '../../config.php' breaks when this plugin dir is symlinked into
+// Moodle for development. Resolve config.php via the web document root
+// (the Moodle web root in both the legacy and 5.x `public/` layouts);
+// fall back to the relative path for CLI / non-symlinked installs.
+require(
+    (!empty($_SERVER['DOCUMENT_ROOT'])
+        && is_file(rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/config.php'))
+        ? rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/config.php'
+        : __DIR__ . '/../../config.php'
+);
 require_once($CFG->libdir . '/adminlib.php');
 
 admin_externalpage_setup('local_sepe_manage');
